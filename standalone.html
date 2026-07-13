@@ -5,38 +5,66 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Budget Safety Net Tracker</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.3.1",
-    "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
-    "react/jsx-dev-runtime": "https://esm.sh/react@18.3.1/jsx-dev-runtime",
-    "react-dom": "https://esm.sh/react-dom@18.3.1",
-    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-    "lucide-react": "https://esm.sh/lucide-react@0.460.0?external=react",
-    "recharts": "https://esm.sh/recharts@2.13.3?external=react,react-dom",
-    "papaparse": "https://esm.sh/papaparse@5.4.1"
-  }
-}
-</script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/prop-types@15/prop-types.min.js"></script>
+<script src="https://unpkg.com/recharts@2.13.3/umd/Recharts.js"></script>
+<script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel" data-type="module" data-presets="react">
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import ReactDOM from 'react-dom/client';
-import {
-  Upload, Plus, Trash2, TrendingUp, DollarSign, Calendar,
-  BarChart3, Edit2, Target, CheckCircle2, AlertTriangle, X, ChevronDown,
-  ChevronUp, Undo2, PiggyBank, Wallet, Repeat, CalendarDays, ShoppingBag,
-  Sparkles, Layers,
-} from 'lucide-react';
-import {
+<script type="text/plain" id="app-source">
+const { useState, useMemo, useEffect, useRef } = React;
+const {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, PieChart, Pie, Cell,
-} from 'recharts';
-import Papa from 'papaparse';
+} = Recharts;
+const Papa = window.Papa;
+
+/* Inline stand-ins for the lucide-react icons this app uses, since
+   lucide-react has no file://-friendly UMD build. Same MIT-licensed
+   glyphs, just hand-inlined so nothing needs to be fetched as a module. */
+const createIcon = (path) => ({ size = 24, className = '', strokeWidth = 2, ...props }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {path}
+  </svg>
+);
+
+const Upload = createIcon(<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" x2="12" y1="3" y2="15" /></>);
+const Plus = createIcon(<><path d="M5 12h14" /><path d="M12 5v14" /></>);
+const Trash2 = createIcon(<><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></>);
+const TrendingUp = createIcon(<><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></>);
+const DollarSign = createIcon(<><line x1="12" x2="12" y1="2" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></>);
+const Calendar = createIcon(<><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /></>);
+const BarChart3 = createIcon(<><path d="M3 3v18h18" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></>);
+const Edit2 = createIcon(<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />);
+const Target = createIcon(<><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></>);
+const CheckCircle2 = createIcon(<><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></>);
+const AlertTriangle = createIcon(<><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><line x1="12" x2="12" y1="9" y2="13" /><line x1="12" x2="12.01" y1="17" y2="17" /></>);
+const X = createIcon(<><path d="M18 6 6 18" /><path d="m6 6 12 12" /></>);
+const ChevronDown = createIcon(<path d="m6 9 6 6 6-6" />);
+const ChevronUp = createIcon(<path d="m18 15-6-6-6 6" />);
+const Undo2 = createIcon(<><path d="M9 14 4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" /></>);
+const PiggyBank = createIcon(<><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2z" /><path d="M2 9v1c0 1.1.9 2 2 2h1" /><path d="M16 11h0" /></>);
+const Wallet = createIcon(<><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></>);
+const Repeat = createIcon(<><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></>);
+const CalendarDays = createIcon(<><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /><path d="M8 14h.01" /><path d="M12 14h.01" /><path d="M16 14h.01" /><path d="M8 18h.01" /><path d="M12 18h.01" /><path d="M16 18h.01" /></>);
+const ShoppingBag = createIcon(<><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" /><path d="M3 6h18" /><path d="M16 10a4 4 0 0 1-8 0" /></>);
+const Sparkles = createIcon(<><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" /><path d="M20 3v4" /><path d="M22 5h-4" /><path d="M4 17v2" /><path d="M5 18H3" /></>);
+const Layers = createIcon(<><path d="m12.83 2.18-8.58 3.9a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83l-8.58-3.9a2 2 0 0 0-1.66 0Z" /><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65" /><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65" /></>);
 
 const fmtEUR = (value, digits = 0) => {
   const n = Number.isFinite(value) ? value : 0;
@@ -1263,9 +1291,17 @@ const SeveranceBudgetTracker = () => {
   );
 };
 
-export default SeveranceBudgetTracker;
-
 ReactDOM.createRoot(document.getElementById('root')).render(<SeveranceBudgetTracker />);
+</script>
+<script>
+  // Manually transform + run the JSX above using the classic runtime
+  // (React.createElement), so it doesn't need a "react/jsx-runtime"
+  // module that isn't available outside an ES-module/CDN setup.
+  var appSource = document.getElementById('app-source').textContent;
+  var transformed = Babel.transform(appSource, {
+    presets: [['react', { runtime: 'classic' }]],
+  }).code;
+  (0, eval)(transformed);
 </script>
 </body>
 </html>
