@@ -1,0 +1,1239 @@
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import {
+  Upload, Plus, Trash2, TrendingUp, DollarSign, Calendar,
+  BarChart3, Edit2, Target, CheckCircle2, AlertTriangle, X, ChevronDown,
+  ChevronUp, Undo2, PiggyBank, Wallet, Repeat, CalendarDays, ShoppingBag,
+  Sparkles, Layers,
+} from 'lucide-react';
+import {
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  Legend, ResponsiveContainer, PieChart, Pie, Cell,
+} from 'recharts';
+import Papa from 'papaparse';
+
+const fmtEUR = (value, digits = 0) => {
+  const n = Number.isFinite(value) ? value : 0;
+  return new Intl.NumberFormat('en-IE', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(n);
+};
+
+const tooltipStyle = {
+  borderRadius: 16,
+  border: '1px solid #E1E1EA',
+  boxShadow: '0 8px 24px rgba(27,27,33,0.10)',
+  fontSize: 13,
+};
+
+function useInView(threshold = 0.15) {
+  const ref = useRef(null);
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          obs.unobserve(node);
+        }
+      },
+      { threshold }
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [threshold]);
+  return [ref, inView];
+}
+
+function useCountUp(target, duration = 700) {
+  const [value, setValue] = useState(target);
+  const prevTarget = useRef(target);
+  const rafRef = useRef(null);
+  useEffect(() => {
+    const start = prevTarget.current;
+    const startTime = performance.now();
+    const step = (now) => {
+      const progress = Math.min(1, (now - startTime) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(start + (target - start) * eased);
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(step);
+      } else {
+        prevTarget.current = target;
+      }
+    };
+    rafRef.current = requestAnimationFrame(step);
+    return () => rafRef.current && cancelAnimationFrame(rafRef.current);
+  }, [target, duration]);
+  return value;
+}
+
+const STAT_TONES = {
+  primary: { grad: 'from-[#EEF1FF] to-[#E3E8FF]', text: 'text-[#1B2559]', icon: '#375DFB' },
+  success: { grad: 'from-[#E7F6EC] to-[#D9F2E2]', text: 'text-[#0D3D1D]', icon: '#1E8E3E' },
+  warn: { grad: 'from-[#FDEDEA] to-[#FBDEDB]', text: 'text-[#5C1A14]', icon: '#B3261E' },
+};
+
+const StatCard = ({ icon: Icon, label, value, tone = 'primary', sub, delay = 0 }) => {
+  const [ref, inView] = useInView();
+  const t = STAT_TONES[tone];
+  return (
+    <div
+      ref={ref}
+      style={{ transitionDelay: `${delay}ms` }}
+      className={`group rounded-[28px] border border-black/5 bg-gradient-to-br ${t.grad} ${t.text} p-6 shadow-sm transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-xl ${
+        inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+      }`}
+    >
+      <div
+        className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-sm transition-transform duration-300 group-hover:scale-110"
+        style={{ background: t.icon }}
+      >
+        <Icon size={22} />
+      </div>
+      <p className="mb-1 text-sm font-medium opacity-70">{label}</p>
+      <p className="text-[28px] font-semibold leading-tight tracking-tight">{value}</p>
+      {sub ? <p className="mt-1 text-xs opacity-60">{sub}</p> : null}
+    </div>
+  );
+};
+
+const SectionCard = ({ title, icon: Icon, children, actions, delay = 0, className = '' }) => {
+  const [ref, inView] = useInView();
+  return (
+    <div
+      ref={ref}
+      style={{ transitionDelay: `${delay}ms` }}
+      className={`rounded-[28px] border border-black/5 bg-white p-6 shadow-sm transition-all duration-700 ease-out hover:shadow-md sm:p-7 ${
+        inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+      } ${className}`}
+    >
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-[#1B1B21]">
+          {Icon ? <Icon size={19} className="text-[#375DFB]" /> : null}
+          {title}
+        </h2>
+        {actions}
+      </div>
+      {children}
+    </div>
+  );
+};
+
+const ExpandingChart = ({ baseHeight, expandedHeight, children }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="transition-[height] duration-300 ease-out"
+      style={{ height: hovered ? expandedHeight : baseHeight }}
+    >
+      {children}
+    </div>
+  );
+};
+
+const NumberField = ({ label, value, onChange, help, min }) => (
+  <div>
+    <label className="mb-1.5 block text-sm font-medium text-[#46464F]">{label}</label>
+    <div className="flex items-center rounded-2xl border border-[#C6C6D0] bg-white px-4 py-3 transition-colors focus-within:border-[#375DFB] focus-within:ring-2 focus-within:ring-[#375DFB]/15">
+      <span className="mr-2 text-[#79747E]">€</span>
+      <input
+        type="number"
+        min={min}
+        value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+        className="w-full bg-transparent text-right text-[15px] font-medium text-[#1B1B21] outline-none"
+      />
+    </div>
+    {help ? <p className="mt-1.5 text-xs text-[#79747E]">{help}</p> : null}
+  </div>
+);
+
+const Snackbar = ({ snackbar, onClose }) => {
+  if (!snackbar) return null;
+  return (
+    <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
+      <div className="animate-fadein flex items-center gap-4 rounded-full bg-[#1B1B21] px-5 py-3 text-sm text-white shadow-2xl">
+        <span>{snackbar.message}</span>
+        {snackbar.onUndo ? (
+          <button
+            onClick={() => {
+              snackbar.onUndo();
+              onClose();
+            }}
+            className="flex items-center gap-1 rounded-full px-3 py-1 font-semibold text-[#AEC0FF] transition-colors hover:bg-white/10"
+          >
+            <Undo2 size={14} /> Undo
+          </button>
+        ) : null}
+        <button
+          onClick={onClose}
+          className="rounded-full p-1 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+        >
+          <X size={14} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const AmountListSection = ({
+  title, icon: Icon, items, setItems, editingExpense, setEditingExpense,
+  updateItem, onAdd, onRemove, total, addLabel, emptyText, delay,
+}) => (
+  <SectionCard
+    title={title}
+    icon={Icon}
+    delay={delay}
+    actions={
+      <span className="rounded-full bg-[#EFECF4] px-3 py-1 text-sm font-semibold text-[#375DFB]">
+        {fmtEUR(total)}
+        <span className="ml-1 font-normal text-[#79747E]">/mo</span>
+      </span>
+    }
+  >
+    <div className="space-y-2">
+      {items.length === 0 && (
+        <p className="rounded-2xl bg-[#F5F2FA] px-4 py-6 text-center text-sm text-[#79747E]">{emptyText}</p>
+      )}
+      {items.map((item) => {
+        const isEditing = editingExpense.type === 'current' && editingExpense.id === item.id;
+        return (
+          <div
+            key={item.id}
+            className={`flex flex-wrap items-center gap-2 rounded-2xl px-4 py-3 transition-colors ${
+              isEditing ? 'bg-[#EEF1FF] ring-1 ring-[#375DFB]/30' : 'hover:bg-[#F5F2FA]'
+            }`}
+          >
+            {isEditing ? (
+              <>
+                <input
+                  autoFocus
+                  value={item.name}
+                  onChange={(e) => updateItem(items, setItems, item.id, 'name', e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && setEditingExpense({ type: null, id: null })}
+                  placeholder="Expense name"
+                  className="min-w-[9rem] flex-1 rounded-xl border border-[#C6C6D0] bg-white px-3 py-2 text-sm outline-none focus:border-[#375DFB]"
+                />
+                <div className="flex items-center rounded-xl border border-[#C6C6D0] bg-white px-2 py-2">
+                  <span className="mr-1 text-xs text-[#79747E]">€</span>
+                  <input
+                    type="number"
+                    value={item.amount}
+                    onChange={(e) => updateItem(items, setItems, item.id, 'amount', parseFloat(e.target.value) || 0)}
+                    onKeyDown={(e) => e.key === 'Enter' && setEditingExpense({ type: null, id: null })}
+                    className="w-20 bg-transparent text-right text-sm outline-none"
+                  />
+                </div>
+                <button
+                  onClick={() => setEditingExpense({ type: null, id: null })}
+                  className="rounded-full bg-[#375DFB] p-2 text-white transition-transform hover:scale-105"
+                  title="Save"
+                >
+                  <CheckCircle2 size={16} />
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-[#1B1B21]">
+                  {item.name || 'Untitled expense'}
+                </span>
+                <span className="text-sm font-semibold text-[#1B1B21]">{fmtEUR(item.amount)}</span>
+                <button
+                  onClick={() => setEditingExpense({ type: 'current', id: item.id })}
+                  className="rounded-full p-2 text-[#79747E] transition-colors hover:bg-[#E3E8FF] hover:text-[#375DFB]"
+                  title="Edit"
+                >
+                  <Edit2 size={15} />
+                </button>
+                <button
+                  onClick={() => onRemove(items, setItems, item.id, item.name)}
+                  className="rounded-full p-2 text-[#79747E] transition-colors hover:bg-[#FDEDEA] hover:text-[#B3261E]"
+                  title="Delete"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </>
+            )}
+          </div>
+        );
+      })}
+    </div>
+    <button
+      onClick={onAdd}
+      className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#C6C6D0] py-3 text-sm font-medium text-[#375DFB] transition-colors hover:border-[#375DFB] hover:bg-[#EEF1FF]"
+    >
+      <Plus size={16} /> {addLabel}
+    </button>
+  </SectionCard>
+);
+
+const UnusualExpensesSection = ({
+  items, setItems, editingExpense, setEditingExpense, updateItem, onAdd, onRemove, months, total, delay,
+}) => (
+  <SectionCard
+    title="One-off Expenses"
+    icon={Sparkles}
+    delay={delay}
+    actions={
+      <span className="rounded-full bg-[#EFECF4] px-3 py-1 text-sm font-semibold text-[#375DFB]">{fmtEUR(total)}</span>
+    }
+  >
+    <p className="mb-4 text-sm text-[#79747E]">
+      Large, irregular costs that hit a single month — a deposit, a big trip, a new laptop.
+    </p>
+    <div className="space-y-2">
+      {items.length === 0 && (
+        <p className="rounded-2xl bg-[#F5F2FA] px-4 py-6 text-center text-sm text-[#79747E]">No one-off expenses yet.</p>
+      )}
+      {items.map((item) => {
+        const isEditing = editingExpense.type === 'unusual' && editingExpense.id === item.id;
+        return (
+          <div
+            key={item.id}
+            className={`flex flex-wrap items-center gap-2 rounded-2xl px-4 py-3 transition-colors ${
+              isEditing ? 'bg-[#EEF1FF] ring-1 ring-[#375DFB]/30' : 'hover:bg-[#F5F2FA]'
+            }`}
+          >
+            {isEditing ? (
+              <>
+                <input
+                  autoFocus
+                  value={item.name}
+                  onChange={(e) => updateItem(items, setItems, item.id, 'name', e.target.value)}
+                  placeholder="Expense name"
+                  className="min-w-[9rem] flex-1 rounded-xl border border-[#C6C6D0] bg-white px-3 py-2 text-sm outline-none focus:border-[#375DFB]"
+                />
+                <select
+                  value={item.month}
+                  onChange={(e) => updateItem(items, setItems, item.id, 'month', e.target.value)}
+                  className="rounded-xl border border-[#C6C6D0] bg-white px-2 py-2 text-sm outline-none focus:border-[#375DFB]"
+                >
+                  {months.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                <div className="flex items-center rounded-xl border border-[#C6C6D0] bg-white px-2 py-2">
+                  <span className="mr-1 text-xs text-[#79747E]">€</span>
+                  <input
+                    type="number"
+                    value={item.amount}
+                    onChange={(e) => updateItem(items, setItems, item.id, 'amount', parseFloat(e.target.value) || 0)}
+                    className="w-20 bg-transparent text-right text-sm outline-none"
+                  />
+                </div>
+                <button
+                  onClick={() => setEditingExpense({ type: null, id: null })}
+                  className="rounded-full bg-[#375DFB] p-2 text-white transition-transform hover:scale-105"
+                  title="Save"
+                >
+                  <CheckCircle2 size={16} />
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-[#1B1B21]">
+                  {item.name || 'Untitled expense'}
+                </span>
+                <span className="rounded-full bg-[#F5F2FA] px-2.5 py-1 text-xs font-medium text-[#46464F]">{item.month}</span>
+                <span className="text-sm font-semibold text-[#1B1B21]">{fmtEUR(item.amount)}</span>
+                <button
+                  onClick={() => setEditingExpense({ type: 'unusual', id: item.id })}
+                  className="rounded-full p-2 text-[#79747E] transition-colors hover:bg-[#E3E8FF] hover:text-[#375DFB]"
+                  title="Edit"
+                >
+                  <Edit2 size={15} />
+                </button>
+                <button
+                  onClick={() => onRemove(items, setItems, item.id, item.name)}
+                  className="rounded-full p-2 text-[#79747E] transition-colors hover:bg-[#FDEDEA] hover:text-[#B3261E]"
+                  title="Delete"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </>
+            )}
+          </div>
+        );
+      })}
+    </div>
+    <button
+      onClick={onAdd}
+      className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#C6C6D0] py-3 text-sm font-medium text-[#375DFB] transition-colors hover:border-[#375DFB] hover:bg-[#EEF1FF]"
+    >
+      <Plus size={16} /> Add one-off expense
+    </button>
+  </SectionCard>
+);
+
+const DistributedExpensesSection = ({
+  items, setItems, editingExpense, setEditingExpense, updateItem, onAdd, onRemove, months, delay,
+}) => {
+  const [open, setOpen] = useState(items.length > 0);
+  return (
+    <SectionCard
+      title="Spread-out Expenses"
+      icon={Layers}
+      delay={delay}
+      actions={
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium text-[#375DFB] transition-colors hover:bg-[#EEF1FF]"
+        >
+          {open ? 'Hide' : 'Show'} {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+      }
+    >
+      <p className="mb-4 text-sm text-[#79747E]">
+        A big cost split evenly across several months — e.g. €3,000 of dental work spread over 6 months.
+      </p>
+      {open && (
+        <>
+          <div className="space-y-2">
+            {items.length === 0 && (
+              <p className="rounded-2xl bg-[#F5F2FA] px-4 py-6 text-center text-sm text-[#79747E]">
+                No spread-out expenses yet.
+              </p>
+            )}
+            {items.map((item) => {
+              const isEditing = editingExpense.type === 'distributed' && editingExpense.id === item.id;
+              return (
+                <div
+                  key={item.id}
+                  className={`flex flex-wrap items-center gap-2 rounded-2xl px-4 py-3 transition-colors ${
+                    isEditing ? 'bg-[#EEF1FF] ring-1 ring-[#375DFB]/30' : 'hover:bg-[#F5F2FA]'
+                  }`}
+                >
+                  {isEditing ? (
+                    <>
+                      <input
+                        autoFocus
+                        value={item.name}
+                        onChange={(e) => updateItem(items, setItems, item.id, 'name', e.target.value)}
+                        placeholder="Expense name"
+                        className="min-w-[9rem] flex-1 rounded-xl border border-[#C6C6D0] bg-white px-3 py-2 text-sm outline-none focus:border-[#375DFB]"
+                      />
+                      <div className="flex items-center rounded-xl border border-[#C6C6D0] bg-white px-2 py-2">
+                        <span className="mr-1 text-xs text-[#79747E]">€</span>
+                        <input
+                          type="number"
+                          value={item.totalAmount}
+                          onChange={(e) => updateItem(items, setItems, item.id, 'totalAmount', parseFloat(e.target.value) || 0)}
+                          className="w-20 bg-transparent text-right text-sm outline-none"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1 rounded-xl border border-[#C6C6D0] bg-white px-2 py-2">
+                        <input
+                          type="number"
+                          min={1}
+                          value={item.months}
+                          onChange={(e) => updateItem(items, setItems, item.id, 'months', parseFloat(e.target.value) || 1)}
+                          className="w-12 bg-transparent text-right text-sm outline-none"
+                        />
+                        <span className="text-xs text-[#79747E]">mo</span>
+                      </div>
+                      <select
+                        value={item.startMonth}
+                        onChange={(e) => updateItem(items, setItems, item.id, 'startMonth', e.target.value)}
+                        className="rounded-xl border border-[#C6C6D0] bg-white px-2 py-2 text-sm outline-none focus:border-[#375DFB]"
+                      >
+                        {months.map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => setEditingExpense({ type: null, id: null })}
+                        className="rounded-full bg-[#375DFB] p-2 text-white transition-transform hover:scale-105"
+                        title="Save"
+                      >
+                        <CheckCircle2 size={16} />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-[#1B1B21]">
+                        {item.name || 'Untitled expense'}
+                      </span>
+                      <span className="rounded-full bg-[#F5F2FA] px-2.5 py-1 text-xs font-medium text-[#46464F]">
+                        {fmtEUR(item.totalAmount)} over {item.months}mo from {item.startMonth}
+                      </span>
+                      <span className="text-sm font-semibold text-[#1B1B21]">{fmtEUR(item.monthlyAmount, 2)}/mo</span>
+                      <button
+                        onClick={() => setEditingExpense({ type: 'distributed', id: item.id })}
+                        className="rounded-full p-2 text-[#79747E] transition-colors hover:bg-[#E3E8FF] hover:text-[#375DFB]"
+                        title="Edit"
+                      >
+                        <Edit2 size={15} />
+                      </button>
+                      <button
+                        onClick={() => onRemove(items, setItems, item.id, item.name)}
+                        className="rounded-full p-2 text-[#79747E] transition-colors hover:bg-[#FDEDEA] hover:text-[#B3261E]"
+                        title="Delete"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <button
+            onClick={onAdd}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#C6C6D0] py-3 text-sm font-medium text-[#375DFB] transition-colors hover:border-[#375DFB] hover:bg-[#EEF1FF]"
+          >
+            <Plus size={16} /> Add spread-out expense
+          </button>
+        </>
+      )}
+    </SectionCard>
+  );
+};
+
+const SeveranceBudgetTracker = () => {
+  const [activeTab, setActiveTab] = useState('dashboard');
+
+  const [income, setIncome] = useState(() => {
+    const saved = localStorage.getItem('budgetTracker_income');
+    if (saved) {
+      const parsedIncome = JSON.parse(saved);
+      return {
+        ...parsedIncome,
+        garageRent: parsedIncome.garageRent !== undefined ? parsedIncome.garageRent : 150,
+        flatRent: parsedIncome.flatRent !== undefined ? parsedIncome.flatRent : 0,
+      };
+    }
+    return {
+      severancePay: 80000,
+      severanceForMonthly: 10000,
+      unemploymentPay: 2690,
+      sharesSold: 0,
+      freelancerWork: 0,
+      garageRent: 150,
+      flatRent: 0,
+    };
+  });
+
+  const [fixedMonthly, setFixedMonthly] = useState(() => {
+    const saved = localStorage.getItem('budgetTracker_fixedMonthly');
+    return saved
+      ? JSON.parse(saved)
+      : [
+          { id: 1, name: 'Investments', amount: 750 },
+          { id: 2, name: 'Flat Loan', amount: 0 },
+          { id: 3, name: 'Electricity', amount: 0 },
+          { id: 4, name: 'Hausgeld', amount: 0 },
+          { id: 5, name: 'Internet', amount: 0 },
+        ];
+  });
+
+  const [fixedAnnual, setFixedAnnual] = useState(() => {
+    const saved = localStorage.getItem('budgetTracker_fixedAnnual');
+    return saved ? JSON.parse(saved) : [{ id: 1, name: 'Insurance', amount: 0 }];
+  });
+
+  const [variableMonthly, setVariableMonthly] = useState(() => {
+    const saved = localStorage.getItem('budgetTracker_variableMonthly');
+    return saved
+      ? JSON.parse(saved)
+      : [
+          { id: 1, name: 'Groceries', amount: 0 },
+          { id: 2, name: 'Transportation', amount: 0 },
+          { id: 3, name: 'Dining Out', amount: 0 },
+        ];
+  });
+
+  const [unusualExpenses, setUnusualExpenses] = useState(() => {
+    const saved = localStorage.getItem('budgetTracker_unusualExpenses');
+    return saved
+      ? JSON.parse(saved)
+      : [
+          { id: 1, name: 'Flat Down Payment', amount: 0, month: 'Sep 2025', isDefault: true },
+          { id: 2, name: 'New Laptop', amount: 0, month: 'Sep 2025', isDefault: true },
+          { id: 3, name: 'Reset Trip', amount: 0, month: 'Oct 2025', isDefault: true },
+        ];
+  });
+
+  const [distributedExpenses, setDistributedExpenses] = useState(() => {
+    const saved = localStorage.getItem('budgetTracker_distributedExpenses');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [uploadedExpenses, setUploadedExpenses] = useState(() => {
+    const saved = localStorage.getItem('budgetTracker_uploadedExpenses');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [currentMonthExpenses, setCurrentMonthExpenses] = useState(() => {
+    const saved = localStorage.getItem('budgetTracker_currentMonthExpenses');
+    return saved ? parseFloat(saved) : 0;
+  });
+
+  const [editingExpense, setEditingExpense] = useState({ type: null, id: null });
+  const [csvError, setCsvError] = useState(null);
+  const [dragActive, setDragActive] = useState(false);
+
+  const [snackbar, setSnackbar] = useState(null);
+  const snackbarTimeoutRef = useRef(null);
+  const showSnackbar = (message, onUndo) => {
+    if (snackbarTimeoutRef.current) clearTimeout(snackbarTimeoutRef.current);
+    setSnackbar({ message, onUndo, key: Date.now() });
+    snackbarTimeoutRef.current = setTimeout(() => setSnackbar(null), 5000);
+  };
+
+  const [showSavedPing, setShowSavedPing] = useState(false);
+  const firstRender = useRef(true);
+
+  useEffect(() => {
+    localStorage.setItem('budgetTracker_income', JSON.stringify(income));
+  }, [income]);
+
+  useEffect(() => {
+    localStorage.setItem('budgetTracker_fixedMonthly', JSON.stringify(fixedMonthly));
+  }, [fixedMonthly]);
+
+  useEffect(() => {
+    localStorage.setItem('budgetTracker_fixedAnnual', JSON.stringify(fixedAnnual));
+  }, [fixedAnnual]);
+
+  useEffect(() => {
+    localStorage.setItem('budgetTracker_variableMonthly', JSON.stringify(variableMonthly));
+  }, [variableMonthly]);
+
+  useEffect(() => {
+    localStorage.setItem('budgetTracker_unusualExpenses', JSON.stringify(unusualExpenses));
+  }, [unusualExpenses]);
+
+  useEffect(() => {
+    localStorage.setItem('budgetTracker_distributedExpenses', JSON.stringify(distributedExpenses));
+  }, [distributedExpenses]);
+
+  useEffect(() => {
+    localStorage.setItem('budgetTracker_uploadedExpenses', JSON.stringify(uploadedExpenses));
+  }, [uploadedExpenses]);
+
+  useEffect(() => {
+    localStorage.setItem('budgetTracker_currentMonthExpenses', currentMonthExpenses.toString());
+  }, [currentMonthExpenses]);
+
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    setShowSavedPing(true);
+    const t = setTimeout(() => setShowSavedPing(false), 1600);
+    return () => clearTimeout(t);
+  }, [income, fixedMonthly, fixedAnnual, variableMonthly, unusualExpenses, distributedExpenses, currentMonthExpenses]);
+
+  const months = [
+    'Sep 2025', 'Oct 2025', 'Nov 2025', 'Dec 2025', 'Jan 2026', 'Feb 2026',
+    'Mar 2026', 'Apr 2026', 'May 2026', 'Jun 2026', 'Jul 2026', 'Aug 2026', 'Sep 2026',
+  ];
+
+  const quarters = [
+    { name: 'Q4 2025', months: ['Sep 2025', 'Oct 2025', 'Nov 2025', 'Dec 2025'] },
+    { name: 'Q1 2026', months: ['Jan 2026', 'Feb 2026', 'Mar 2026'] },
+    { name: 'Q2 2026', months: ['Apr 2026', 'May 2026', 'Jun 2026'] },
+    { name: 'Q3 2026', months: ['Jul 2026', 'Aug 2026', 'Sep 2026'] },
+  ];
+
+  const processCsvFile = (file) => {
+    if (!file) return;
+    setCsvError(null);
+    Papa.parse(file, {
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        if (results.errors && results.errors.length > 0) {
+          setCsvError(`${results.errors.length} row(s) couldn't be read — please check the file format.`);
+        }
+        setUploadedExpenses(results.data);
+        showSnackbar(`${results.data.length} expense rows imported`);
+      },
+    });
+  };
+
+  const handleCSVUpload = (e) => processCsvFile(e.target.files[0]);
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragActive(false);
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    processCsvFile(file);
+  };
+
+  const addItem = (items, setItems) => {
+    const newItem = { id: Date.now(), name: '', amount: 0 };
+    setItems([...items, newItem]);
+    setEditingExpense({ type: 'current', id: newItem.id });
+  };
+
+  const addUnusualExpense = () => {
+    const newExpense = { id: Date.now(), name: '', amount: 0, month: 'Sep 2025', isDefault: false };
+    setUnusualExpenses([...unusualExpenses, newExpense]);
+    setEditingExpense({ type: 'unusual', id: newExpense.id });
+  };
+
+  const addDistributedExpense = () => {
+    const newExpense = {
+      id: Date.now(),
+      name: '',
+      totalAmount: 0,
+      monthlyAmount: 0,
+      months: 6,
+      startMonth: 'Sep 2025',
+    };
+    setDistributedExpenses([...distributedExpenses, newExpense]);
+    setEditingExpense({ type: 'distributed', id: newExpense.id });
+  };
+
+  const removeItem = (items, setItems, id, label) => {
+    const idx = items.findIndex((i) => i.id === id);
+    if (idx === -1) return;
+    const removed = items[idx];
+    setItems(items.filter((item) => item.id !== id));
+    showSnackbar(`"${label || 'Untitled expense'}" deleted`, () => {
+      setItems((prev) => {
+        const copy = [...prev];
+        copy.splice(idx, 0, removed);
+        return copy;
+      });
+    });
+  };
+
+  const updateItem = (items, setItems, id, field, value) => {
+    setItems(
+      items.map((item) => {
+        if (item.id === id) {
+          const updated = { ...item, [field]: value };
+          if (field === 'totalAmount' || field === 'months') {
+            updated.monthlyAmount = updated.totalAmount / (updated.months || 1);
+          }
+          return updated;
+        }
+        return item;
+      })
+    );
+  };
+
+  const monthlyFromSeverance = income.severanceForMonthly / 12;
+  const totalFixedMonthly = fixedMonthly.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+  const totalVariableMonthly = variableMonthly.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+  const totalUnusualExpenses = unusualExpenses.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+  const totalAnnualExpenses = fixedAnnual.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+
+  const expensesByMonth = useMemo(() => {
+    const byMonth = {};
+    uploadedExpenses.forEach((expense) => {
+      if (expense.Date || expense.date) {
+        const dateStr = expense.Date || expense.date;
+        const date = new Date(dateStr);
+        const monthKey = `${date.toLocaleString('en-US', { month: 'short' })} ${date.getFullYear()}`;
+
+        if (!byMonth[monthKey]) {
+          byMonth[monthKey] = { total: 0, categories: {} };
+        }
+
+        const amount = Math.abs(parseFloat(expense.Amount || expense.amount || 0));
+        const category = expense.Category || expense.category || 'Uncategorized';
+
+        byMonth[monthKey].total += amount;
+        byMonth[monthKey].categories[category] = (byMonth[monthKey].categories[category] || 0) + amount;
+      }
+    });
+    return byMonth;
+  }, [uploadedExpenses]);
+
+  const getDistributedExpenseForMonth = (monthIndex) => {
+    let total = 0;
+    distributedExpenses.forEach((expense) => {
+      const startIndex = months.indexOf(expense.startMonth);
+      const endIndex = startIndex + (expense.months || 0);
+      if (monthIndex >= startIndex && monthIndex < endIndex) {
+        total += parseFloat(expense.monthlyAmount) || 0;
+      }
+    });
+    return total;
+  };
+
+  const budgetData = months.map((month, index) => {
+    const monthlyIncome =
+      income.unemploymentPay +
+      monthlyFromSeverance +
+      income.freelancerWork / 13 +
+      income.sharesSold / 13 +
+      (income.garageRent || 0) +
+      (income.flatRent || 0);
+
+    const uploadedExpensesForMonth = expensesByMonth[month]?.total || 0;
+    const distributedForMonth = getDistributedExpenseForMonth(index);
+    const totalMonthlyExpenses = totalFixedMonthly + totalVariableMonthly + distributedForMonth;
+    const monthBalance = monthlyIncome - totalMonthlyExpenses - uploadedExpensesForMonth;
+
+    return {
+      month,
+      income: parseFloat(monthlyIncome.toFixed(2)),
+      totalExpenses: parseFloat((totalMonthlyExpenses + uploadedExpensesForMonth).toFixed(2)),
+      balance: parseFloat(monthBalance.toFixed(2)),
+      cumulative: 0,
+    };
+  });
+
+  let cumulativeBalance = income.severancePay - income.severanceForMonthly - totalUnusualExpenses - totalAnnualExpenses;
+  budgetData.forEach((month) => {
+    cumulativeBalance += month.balance;
+    month.cumulative = parseFloat(cumulativeBalance.toFixed(2));
+  });
+
+  const quarterlyData = quarters.map((quarter) => {
+    const quarterMonths = budgetData.filter((m) => quarter.months.includes(m.month));
+    return {
+      quarter: quarter.name,
+      income: quarterMonths.reduce((sum, m) => sum + m.income, 0),
+      expenses: quarterMonths.reduce((sum, m) => sum + m.totalExpenses, 0),
+      balance: quarterMonths.reduce((sum, m) => sum + m.balance, 0),
+    };
+  });
+
+  const currentMonth = months[0];
+  const currentMonthData = budgetData[0];
+  const currentMonthBudget = currentMonthData.income;
+  const currentMonthActualExpenses = currentMonthData.totalExpenses + currentMonthExpenses;
+  const currentMonthRemaining = currentMonthBudget - currentMonthActualExpenses;
+  const monthStatus =
+    currentMonthRemaining < 0 ? 'over' : currentMonthRemaining < currentMonthBudget * 0.2 ? 'caution' : 'ok';
+
+  const categoryData = useMemo(() => {
+    const categories = {};
+    uploadedExpenses.forEach((expense) => {
+      const category = expense.Category || expense.category || 'Uncategorized';
+      const amount = Math.abs(parseFloat(expense.Amount || expense.amount || 0));
+      categories[category] = (categories[category] || 0) + amount;
+    });
+
+    return Object.entries(categories)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8);
+  }, [uploadedExpenses]);
+
+  const COLORS = ['#375DFB', '#7C4DFF', '#00ACC1', '#F4A300', '#FF6F61', '#43A047', '#8D6E63', '#5C6BC0'];
+
+  const currentSeveranceBalance = income.severancePay - income.severanceForMonthly - totalUnusualExpenses - totalAnnualExpenses;
+  const projectedEndBalance = budgetData[budgetData.length - 1]?.cumulative || 0;
+
+  const monthlyBurn = totalFixedMonthly + totalVariableMonthly;
+  const runwayMonths = monthlyBurn > 0 ? currentSeveranceBalance / monthlyBurn : null;
+
+  const heroSeverance = useCountUp(currentSeveranceBalance);
+  const heroIncome = useCountUp(currentMonthBudget);
+  const heroProjected = useCountUp(projectedEndBalance);
+
+  const STATUS_BANNER = {
+    over: { bg: 'bg-[#FDEDEA]', text: 'text-[#5C1A14]', Icon: AlertTriangle, message: 'You are over budget this month.' },
+    caution: {
+      bg: 'bg-[#FFF6E5]', text: 'text-[#5C4200]', Icon: AlertTriangle,
+      message: "Less than 20% of this month's budget remains.",
+    },
+    ok: { bg: 'bg-[#E7F6EC]', text: 'text-[#0D3D1D]', Icon: CheckCircle2, message: "You're on track — nice work protecting your runway." },
+  };
+  const bannerInfo = STATUS_BANNER[monthStatus];
+  const BannerIcon = bannerInfo.Icon;
+
+  return (
+    <div className="min-h-screen bg-[#F7F7FB] text-[#1B1B21]">
+      <style>{`
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fadein { animation: fadeInUp .35s ease-out; }
+        @keyframes pulseSoft { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        .animate-pulse-soft { animation: pulseSoft 1.8s ease-in-out infinite; }
+      `}</style>
+
+      <div className="bg-[#1B1B21] text-white">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#375DFB]">
+                <PiggyBank size={22} />
+              </span>
+              <div>
+                <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Budget Safety Net</h1>
+                <p className="text-sm text-white/60">Sep 2025 – Sep 2026 · career transition runway</p>
+              </div>
+            </div>
+            <div
+              className={`flex items-center gap-1.5 text-sm text-white/50 transition-opacity duration-500 ${
+                showSavedPing ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              Saved
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="border-b border-black/5 bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6">
+          <div className="inline-flex rounded-full bg-[#F5F2FA] p-1">
+            {[
+              { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+              { id: 'settings', label: 'Income & Expenses', icon: Wallet },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`relative flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-colors duration-200 ${
+                  activeTab === tab.id ? 'bg-white text-[#375DFB] shadow-sm' : 'text-[#46464F] hover:text-[#1B1B21]'
+                }`}
+              >
+                <tab.icon size={17} />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-7xl p-4 sm:p-6">
+        {activeTab === 'dashboard' && (
+          <div key="dashboard" className="animate-fadein space-y-6">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+              <StatCard
+                icon={DollarSign}
+                label="Available Severance"
+                value={fmtEUR(heroSeverance)}
+                tone="success"
+                sub={runwayMonths !== null ? `≈ ${runwayMonths.toFixed(1)} months of runway at current spend` : undefined}
+                delay={0}
+              />
+              <StatCard
+                icon={Calendar}
+                label="Monthly Income (this month)"
+                value={fmtEUR(heroIncome)}
+                tone="primary"
+                sub="Unemployment insurance + severance + rent"
+                delay={80}
+              />
+              <StatCard
+                icon={Target}
+                label="Projected Balance (Sep 2026)"
+                value={fmtEUR(heroProjected)}
+                tone={projectedEndBalance >= 0 ? 'success' : 'warn'}
+                sub={projectedEndBalance >= 0 ? 'On pace to end with a cushion' : 'On pace to run out before Sep 2026'}
+                delay={160}
+              />
+            </div>
+
+            <SectionCard title={`Current Month: ${currentMonth}`} icon={TrendingUp} delay={120}>
+              <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-sm font-medium text-[#46464F]">Monthly Budget</span>
+                    <span className="text-base font-semibold text-[#375DFB]">{fmtEUR(currentMonthBudget)}</span>
+                  </div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-sm font-medium text-[#46464F]">Planned Expenses</span>
+                    <span className="text-base font-semibold text-[#B36B00]">{fmtEUR(currentMonthData.totalExpenses)}</span>
+                  </div>
+                  <div className="mb-4 flex items-center justify-between">
+                    <span className="text-sm font-medium text-[#46464F]">Additional Expenses</span>
+                    <div className="flex items-center rounded-xl border border-[#C6C6D0] bg-white px-2 py-1.5">
+                      <span className="mr-1 text-xs text-[#79747E]">€</span>
+                      <input
+                        type="number"
+                        value={currentMonthExpenses}
+                        onChange={(e) => setCurrentMonthExpenses(parseFloat(e.target.value) || 0)}
+                        className="w-24 bg-transparent text-right text-sm font-medium outline-none"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                  <div className="border-t border-black/5 pt-4">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-[#1B1B21]">Remaining</span>
+                      <span className={`text-2xl font-bold ${currentMonthRemaining >= 0 ? 'text-[#1E8E3E]' : 'text-[#B3261E]'}`}>
+                        {fmtEUR(currentMonthRemaining)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <ExpandingChart baseHeight={220} expandedHeight={250}>
+                  <div className="relative h-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={[
+                            { name: 'Remaining', value: Math.max(0, currentMonthRemaining) },
+                            { name: 'Spent', value: currentMonthActualExpenses },
+                          ]}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={90}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          <Cell fill="#1E8E3E" />
+                          <Cell fill="#B3261E" />
+                        </Pie>
+                        <Tooltip formatter={(value) => fmtEUR(value)} contentStyle={tooltipStyle} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-sm text-[#79747E]">Budget Usage</span>
+                      <span className="text-2xl font-bold text-[#1B1B21]">
+                        {((currentMonthActualExpenses / currentMonthBudget) * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  </div>
+                </ExpandingChart>
+              </div>
+
+              <div className={`flex items-center gap-3 rounded-2xl ${bannerInfo.bg} ${bannerInfo.text} px-4 py-3.5`}>
+                <BannerIcon size={18} className={monthStatus === 'ok' ? 'animate-pulse-soft' : ''} />
+                <p className="text-sm font-medium">{bannerInfo.message}</p>
+              </div>
+            </SectionCard>
+
+            <SectionCard title="Quarterly Overview" icon={BarChart3} delay={0}>
+              <ExpandingChart baseHeight={340} expandedHeight={380}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={quarterlyData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E1E1EA" />
+                    <XAxis dataKey="quarter" tick={{ fill: '#46464F', fontSize: 12 }} axisLine={{ stroke: '#E1E1EA' }} />
+                    <YAxis tick={{ fill: '#46464F', fontSize: 12 }} axisLine={{ stroke: '#E1E1EA' }} />
+                    <Tooltip formatter={(value) => fmtEUR(value)} contentStyle={tooltipStyle} />
+                    <Legend />
+                    <Bar dataKey="income" fill="#1E8E3E" name="Income" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="expenses" fill="#B3261E" name="Expenses" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="balance" fill="#375DFB" name="Net Balance" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ExpandingChart>
+            </SectionCard>
+
+            <SectionCard title="13-Month Projection" icon={TrendingUp} delay={0}>
+              <ExpandingChart baseHeight={380} expandedHeight={420}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={budgetData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E1E1EA" />
+                    <XAxis
+                      dataKey="month"
+                      angle={-45}
+                      textAnchor="end"
+                      height={90}
+                      tick={{ fill: '#46464F', fontSize: 11 }}
+                      axisLine={{ stroke: '#E1E1EA' }}
+                    />
+                    <YAxis tick={{ fill: '#46464F', fontSize: 12 }} axisLine={{ stroke: '#E1E1EA' }} />
+                    <Tooltip formatter={(value) => fmtEUR(value)} contentStyle={tooltipStyle} />
+                    <Legend />
+                    <Line type="monotone" dataKey="income" stroke="#1E8E3E" strokeWidth={2} name="Monthly Income" dot={false} />
+                    <Line type="monotone" dataKey="totalExpenses" stroke="#B3261E" strokeWidth={2} name="Total Expenses" dot={false} />
+                    <Line type="monotone" dataKey="cumulative" stroke="#375DFB" strokeWidth={3} name="Cumulative Balance" dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ExpandingChart>
+            </SectionCard>
+
+            {categoryData.length > 0 && (
+              <SectionCard title="Expense Breakdown by Category" icon={ShoppingBag} delay={0}>
+                <ExpandingChart baseHeight={300} expandedHeight={330}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={categoryData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={true}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={100}
+                        dataKey="value"
+                      >
+                        {categoryData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => fmtEUR(value)} contentStyle={tooltipStyle} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </ExpandingChart>
+              </SectionCard>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div key="settings" className="animate-fadein space-y-6">
+            <SectionCard title="Upload Expense Data" icon={Upload} delay={0}>
+              <label
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragActive(true);
+                }}
+                onDragLeave={() => setDragActive(false)}
+                onDrop={handleDrop}
+                className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-10 text-center transition-colors ${
+                  dragActive ? 'border-[#375DFB] bg-[#EEF1FF]' : 'border-[#C6C6D0] bg-[#F5F2FA] hover:border-[#375DFB] hover:bg-[#EEF1FF]'
+                }`}
+              >
+                <Upload className="text-[#375DFB]" size={26} />
+                <span className="text-base font-medium text-[#1B1B21]">Drop a CSV here, or click to browse</span>
+                <span className="text-xs text-[#79747E]">Columns: Date, Amount, Category</span>
+                <input type="file" accept=".csv" onChange={handleCSVUpload} className="hidden" />
+              </label>
+              {uploadedExpenses.length > 0 && (
+                <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-[#1E8E3E]">
+                  <CheckCircle2 size={16} /> {uploadedExpenses.length} expense entries loaded
+                </p>
+              )}
+              {csvError && (
+                <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-[#B3261E]">
+                  <AlertTriangle size={16} /> {csvError}
+                </p>
+              )}
+            </SectionCard>
+
+            <SectionCard
+              title="Income Sources"
+              icon={Wallet}
+              delay={0}
+            >
+              <div className="mb-5 flex items-center justify-between rounded-2xl bg-[#F5F2FA] px-4 py-3">
+                <span className="text-sm font-medium text-[#46464F]">Estimated monthly income</span>
+                <span className="text-lg font-semibold text-[#375DFB]">{fmtEUR(currentMonthBudget, 2)}</span>
+              </div>
+              <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
+                <NumberField
+                  label="Severance pay (total)"
+                  value={income.severancePay}
+                  onChange={(v) => setIncome({ ...income, severancePay: v })}
+                />
+                <NumberField
+                  label="Severance allocated to monthly income"
+                  value={income.severanceForMonthly}
+                  onChange={(v) => setIncome({ ...income, severanceForMonthly: v })}
+                  help={`Spread over 12 months → ${fmtEUR(monthlyFromSeverance, 2)}/mo`}
+                />
+                <NumberField
+                  label="Unemployment insurance (monthly)"
+                  value={income.unemploymentPay}
+                  onChange={(v) => setIncome({ ...income, unemploymentPay: v })}
+                />
+                <NumberField
+                  label="Shares sold (total)"
+                  value={income.sharesSold}
+                  onChange={(v) => setIncome({ ...income, sharesSold: v })}
+                  help="Spread evenly across the 13-month plan"
+                />
+                <NumberField
+                  label="Freelance work (total)"
+                  value={income.freelancerWork}
+                  onChange={(v) => setIncome({ ...income, freelancerWork: v })}
+                  help="Spread evenly across the 13-month plan"
+                />
+                <NumberField
+                  label="Garage rent (monthly)"
+                  value={income.garageRent}
+                  onChange={(v) => setIncome({ ...income, garageRent: v })}
+                />
+                <NumberField
+                  label="Flat rent (monthly)"
+                  value={income.flatRent}
+                  onChange={(v) => setIncome({ ...income, flatRent: v })}
+                />
+              </div>
+            </SectionCard>
+
+            <AmountListSection
+              title="Fixed Monthly Expenses"
+              icon={Repeat}
+              items={fixedMonthly}
+              setItems={setFixedMonthly}
+              editingExpense={editingExpense}
+              setEditingExpense={setEditingExpense}
+              updateItem={updateItem}
+              onAdd={() => addItem(fixedMonthly, setFixedMonthly)}
+              onRemove={removeItem}
+              total={totalFixedMonthly}
+              addLabel="Add fixed monthly expense"
+              emptyText="No fixed monthly expenses yet."
+              delay={0}
+            />
+
+            <AmountListSection
+              title="Fixed Annual Expenses"
+              icon={CalendarDays}
+              items={fixedAnnual}
+              setItems={setFixedAnnual}
+              editingExpense={editingExpense}
+              setEditingExpense={setEditingExpense}
+              updateItem={updateItem}
+              onAdd={() => addItem(fixedAnnual, setFixedAnnual)}
+              onRemove={removeItem}
+              total={totalAnnualExpenses}
+              addLabel="Add fixed annual expense"
+              emptyText="No fixed annual expenses yet."
+              delay={0}
+            />
+
+            <AmountListSection
+              title="Variable Monthly Expenses"
+              icon={ShoppingBag}
+              items={variableMonthly}
+              setItems={setVariableMonthly}
+              editingExpense={editingExpense}
+              setEditingExpense={setEditingExpense}
+              updateItem={updateItem}
+              onAdd={() => addItem(variableMonthly, setVariableMonthly)}
+              onRemove={removeItem}
+              total={totalVariableMonthly}
+              addLabel="Add variable monthly expense"
+              emptyText="No variable monthly expenses yet."
+              delay={0}
+            />
+
+            <UnusualExpensesSection
+              items={unusualExpenses}
+              setItems={setUnusualExpenses}
+              editingExpense={editingExpense}
+              setEditingExpense={setEditingExpense}
+              updateItem={updateItem}
+              onAdd={addUnusualExpense}
+              onRemove={removeItem}
+              months={months}
+              total={totalUnusualExpenses}
+              delay={0}
+            />
+
+            <DistributedExpensesSection
+              items={distributedExpenses}
+              setItems={setDistributedExpenses}
+              editingExpense={editingExpense}
+              setEditingExpense={setEditingExpense}
+              updateItem={updateItem}
+              onAdd={addDistributedExpense}
+              onRemove={removeItem}
+              months={months}
+              delay={0}
+            />
+          </div>
+        )}
+      </div>
+
+      <Snackbar snackbar={snackbar} onClose={() => setSnackbar(null)} />
+    </div>
+  );
+};
+
+export default SeveranceBudgetTracker;
