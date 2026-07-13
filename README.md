@@ -8,17 +8,9 @@ Originally built as a Claude.ai artifact; extracted here so it can be developed 
 
 ### 1. Zero-install: `standalone.html`
 
-Just open `standalone.html` directly in a browser (double-click it, or serve it with any static file server). It loads React, Recharts, lucide-react and PapaParse from CDNs (esm.sh / unpkg) at runtime and uses Tailwind's Play CDN, so there's nothing to install.
+Just double-click `standalone.html` to open it directly in a browser - no server, no install. It loads React, ReactDOM, Recharts and PapaParse from CDNs (unpkg) as classic UMD scripts, uses Tailwind's Play CDN, and transforms its own JSX in-browser via Babel standalone. lucide-react's icons are hand-inlined as small SVG components (its own package has no `file://`-friendly UMD build), so nothing needs a module loader.
 
-Good for quick edits and previewing changes without a build step. After editing the JSX inside the `<script type="text/babel" data-type="module">` block, just refresh the page.
-
-Note: opening the file with `file://` won't work in most browsers because of ES module CORS restrictions - serve it over `http://` instead, e.g.:
-
-```bash
-npx serve .
-# or
-python3 -m http.server 8080
-```
+Good for quick edits and previewing changes without a build step. After editing the JSX (inside the `<script type="text/plain" id="app-source">` block), just refresh the page.
 
 ### 2. Proper dev setup: Vite project
 
