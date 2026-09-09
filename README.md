@@ -1,5 +1,9 @@
 # Budget Tracker
 
+**[Live demo →](https://dnandadias.github.io/severance-budget-tracker/)** — no
+install, no cloning, just open the link. Redeploys automatically on every push to
+`main` via GitHub Actions.
+
 A personal budget tracker with two modes, chosen from a landing screen:
 
 - **Usual Budget** — everyday income and expenses, categorized, with monthly and
