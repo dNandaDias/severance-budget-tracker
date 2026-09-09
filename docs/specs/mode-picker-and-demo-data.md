@@ -1,8 +1,8 @@
 # Mode picker + demo data (resuming after pause)
 
-Status: decisions confirmed, ready to build
+Status: all 10 steps complete — live at https://dnandadias.github.io/severance-budget-tracker/
 Created: 2026-08-27
-Last updated: 2026-09-04
+Last updated: 2026-09-09
 
 ## Context — what "resuming" actually means here
 
@@ -270,6 +270,28 @@ on top of the separate-storage safety net.
   screenshots for this one, same reasoning as step 4. Verified `npm run
   build` still passes with `standalone.html` gone, and the app loads
   correctly (mode picker renders, both `h2`s present).
+- **2026-09-09 — Step 9 done.** Committed. Before staging anything, scanned
+  `git status` on the untracked items and found a real problem: the
+  `Runway — Personal Finance_Categories/` folder (real subscription
+  statements, PDFs) wasn't covered by any existing `.gitignore` rule —
+  a broad `git add` would have pushed personal financial documents to a
+  public repo. Added it to `.gitignore` before touching `git add`, then
+  grepped the actual diffs for anything resembling a hardcoded secret
+  (API keys, tokens, passwords) — none found. Staged everything explicitly
+  by name (not `-A`) across three commits: the main feature commit (46
+  files), the GitHub Pages workflow config, and a Node-version bump to
+  clear a deprecation warning.
+- **2026-09-09 — Step 10 done.** Created the public GitHub repo
+  (`dNandaDias/severance-budget-tracker`), pushed, added a GitHub Actions
+  workflow (`.github/workflows/deploy.yml`) that builds and deploys `dist/`
+  to Pages on every push to `main`, and set the Vite `base` path for the
+  project-page URL. Enabled Pages via the API (source: GitHub Actions).
+  Watched both workflow runs to completion — both succeeded. Verified the
+  live site directly: loads at the right URL, mode picker renders, clicking
+  into severance mode shows the correct demo data end-to-end, no console
+  errors beyond the pre-existing benign favicon 404. Added the live link
+  to `README.md`.
+  **Live at: https://dnandadias.github.io/severance-budget-tracker/**
 
 ## Confirmed sequencing
 
@@ -281,8 +303,9 @@ on top of the separate-storage safety net.
 6. ~~**Build the landing/mode-picker screen**~~ — done, see progress log.
 7. ~~**Add the period export/backup option**~~ — done, see progress log.
 8. ~~**Delete `standalone.html`**; update `README.md`~~ — done, see progress log.
-9. **Commit.**
-10. **Deploy to GitHub Pages**; add the live link to `README.md`.
+9. ~~**Commit.**~~ — done, see progress log.
+10. ~~**Deploy to GitHub Pages**; add the live link to `README.md`~~ — done, see
+    progress log. **All 10 steps complete.**
 
 ## Out of scope
 
