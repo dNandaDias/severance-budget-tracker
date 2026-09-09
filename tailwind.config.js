@@ -2,7 +2,11 @@
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
-    extend: {},
+    extend: {
+      transitionTimingFunction: {
+        DEFAULT: 'cubic-bezier(0.2, 0, 0, 1)', // Material Design 3 standard easing
+      },
+    },
   },
   plugins: [],
 };

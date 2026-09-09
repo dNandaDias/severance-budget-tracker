@@ -5,4 +5,8 @@ dist
 
 # personal financial data — screenshots and draft exports, not app code
 Daily Budget*/
+Runway — Personal Finance_Categories/
 *.csv
+
+# Playwright MCP scratch output (snapshots, console logs)
+.playwright-mcp/

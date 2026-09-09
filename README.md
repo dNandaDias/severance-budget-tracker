@@ -1,22 +1,21 @@
-# Budget Safety Net Tracker
+# Budget Tracker
 
-A severance/budget runway tracker for a career transition period (Sep 2025 - Sep 2026). Tracks income sources, fixed/variable/one-off/spread-out expenses, and projects the balance forward across a 13-month horizon.
+A personal budget tracker with two modes, chosen from a landing screen:
 
-Originally built as a Claude.ai artifact; extracted here so it can be developed locally instead of through the chat UI.
+- **Usual Budget** — everyday income and expenses, categorized, with monthly and
+  spending-by-category breakdowns. For ongoing, month-to-month budgeting.
+- **Severance / Career Transition** — a severance payout draining over time,
+  alongside income and expenses, with a runway projection. Built first, for a real
+  career-transition period; the generic mode came later, reusing the same
+  components.
 
-## Two ways to run it
+Originally built as a Claude.ai artifact, then extracted into a proper local
+project and rebuilt into a two-mode app with categorized spending, CSV import/export,
+dark mode, and a privacy-blur toggle.
 
-### 1. Zero-install: `standalone.html`
+## Running it
 
-Just double-click `standalone.html` to open it directly in a browser - no server, no install. It loads React, ReactDOM, Recharts and PapaParse from CDNs (unpkg) as classic UMD scripts, uses Tailwind's Play CDN, and transforms its own JSX in-browser via Babel standalone. lucide-react's icons are hand-inlined as small SVG components (its own package has no `file://`-friendly UMD build), so nothing needs a module loader.
-
-Good for quick edits and previewing changes without a build step. After editing the JSX (inside the `<script type="text/plain" id="app-source">` block), just refresh the page.
-
-### 2. Proper dev setup: Vite project
-
-This is the same component (`src/SeveranceBudgetTracker.jsx`) wired up as a normal Vite + React + Tailwind project, for when you want fast HMR, a real build, linting, etc.
-
-Requires [Node.js](https://nodejs.org) (18+) - this machine didn't have it installed at the time this was set up.
+Requires [Node.js](https://nodejs.org) (18+).
 
 ```bash
 npm install
@@ -24,41 +23,87 @@ npm run dev      # starts a dev server with hot reload
 npm run build    # production build to dist/
 ```
 
+There's a single entry point now — the Vite project. (An earlier zero-install
+`standalone.html` version existed for a while during development but was retired
+once the app grew a second mode; keeping a hand-copied duplicate of a two-mode,
+multi-file app in sync by hand stopped being worth it.)
+
+## Features
+
+- **Mode picker** on first visit; your choice is remembered, and a "Switch mode"
+  button in the header takes you back to it any time.
+- **Categorized spending** — every expense (fixed, variable, one-off, or uploaded
+  via CSV) can be tagged with a category, from a preset list or a custom one you
+  add. One unified "Expense Breakdown by Category" chart across all of it.
+- **CSV import** for migrating from another budgeting tool or spreadsheet (expects
+  Date/Amount/Category columns), plus **CSV and JSON export** of everything entered.
+- **"Start a new period"** — download a full backup, then clear a mode's data for a
+  fresh start (e.g. severance ending, a new job starting). Confirms first, and the
+  clear itself is undoable for a few seconds. The other mode is never affected.
+- **Dark mode** and a **privacy-blur toggle** (for screen-sharing or screenshots),
+  both real Material 3 treatments, not a quick inversion.
+
 ## Project structure
 
 ```
 severance-budget-tracker/
-├── standalone.html              # zero-install version (CDN-based)
-├── index.html                   # Vite entry point
+├── index.html                      # Vite entry point
 ├── package.json
 ├── vite.config.js
 ├── tailwind.config.js
 ├── postcss.config.js
+├── docs/
+│   ├── specs/                      # written plans for larger features
+│   └── figma-screenshots/          # before/after screenshots for design documentation
 └── src/
-    ├── main.jsx                 # Vite entry, mounts the component
-    ├── index.css                # Tailwind directives
-    └── SeveranceBudgetTracker.jsx  # the actual app (single component)
+    ├── main.jsx                    # Vite entry, mounts <App />
+    ├── App.jsx                     # holds the chosen mode, renders the picker or a tracker
+    ├── index.css                   # Tailwind directives
+    ├── BudgetTracker.jsx           # "Usual Budget" mode
+    ├── SeveranceBudgetTracker.jsx  # "Severance / Career Transition" mode
+    ├── components/                 # shared UI: both trackers import from here
+    │   ├── ModePicker.jsx, AppHeader.jsx, TabNav.jsx, ThemeStyles.jsx
+    │   ├── StatCard.jsx, SectionCard.jsx, ExpandingChart.jsx, NumberField.jsx
+    │   ├── CategorySelect.jsx, AmountListSection.jsx, UnusualExpensesSection.jsx,
+    │   │   DistributedExpensesSection.jsx
+    │   ├── ExportDataSection.jsx, ConfirmDialog.jsx, Snackbar.jsx
+    │   ├── PrivacyContext.jsx, icons.jsx
+    ├── hooks/                       # useInView, useCountUp
+    └── lib/                         # format.js, categories.js, chartTheme.js
 ```
 
-**Keep `src/SeveranceBudgetTracker.jsx` and the JSX embedded in `standalone.html` in sync** if you want both entry points to stay usable - they're currently identical copies of the same component, not shared via import, since `standalone.html` can't import a local `.jsx` file without a bundler.
+Both trackers are separate top-level components (not one component with
+conditional sections) but share almost everything presentational — only the data
+model and the dashboard's calculations differ between them.
 
 ## Data & state
 
-All state lives in `localStorage` under these keys (nothing is sent to a server):
+Nothing is sent to a server; everything lives in `localStorage`.
 
-- `budgetTracker_income`
-- `budgetTracker_fixedMonthly`
-- `budgetTracker_fixedAnnual`
-- `budgetTracker_variableMonthly`
-- `budgetTracker_unusualExpenses`
-- `budgetTracker_distributedExpenses`
-- `budgetTracker_uploadedExpenses`
-- `budgetTracker_currentMonthExpenses`
+Each mode's financial data is **namespaced separately**, so switching modes never
+overwrites the other:
 
-Because `standalone.html` and the Vite dev server run on different origins/ports, they'll have **separate localStorage**, so data entered in one won't show up in the other. If you want the same data everywhere, export/re-import manually or pick one entry point to be canonical.
+- `budgetTracker_severance_*` — income, fixedMonthly, fixedAnnual, variableMonthly,
+  unusualExpenses, distributedExpenses, uploadedExpenses (severance mode)
+- `budgetTracker_generic_*` — the same fields, for Usual Budget mode
+
+A few things are **shared** across both modes, since they're viewing preferences
+or a personal taxonomy, not data tied to one period:
+
+- `budgetTracker_categories` — your preset + custom category list
+- `budgetTracker_darkMode`, `budgetTracker_hideAmounts` — appearance preferences
+- `budgetTracker_activeMode` — which mode the picker last sent you to
 
 ## Design notes
 
-- Material 3-inspired visuals: tonal color containers, `rounded-[28px]` cards, pill-shaped segmented tab nav, soft elevation via shadow/hover instead of heavy borders.
-- Usability: undo-on-delete (5s snackbar), a "Saved" indicator that pulses on autosave, scroll-reveal + hover-expanding charts, collapsible "Spread-out Expenses" section.
-- All financial calculations (severance runway, monthly projections, quarterly rollups) are unchanged from the original artifact - only the visual/interaction layer was redesigned.
+- Material 3-inspired visuals: tonal colour containers, `rounded-[28px]` cards,
+  pill-shaped segmented tab nav, soft elevation via shadow/hover instead of heavy
+  borders, Fraunces for headings.
+- Usability: undo-on-delete (5s snackbar, also used for the "start fresh" reset),
+  a confirmation dialog before anything destructive, a "Saved" indicator that
+  pulses on autosave, scroll-reveal + hover-expanding charts, a collapsible
+  "Spread-out Expenses" section.
+- Checked against this workspace's `design-principles.md` (WCAG 2.2 contrast,
+  Gestalt grouping, Nielsen's heuristics) rather than just eyeballed — a couple of
+  real contrast bugs were found and fixed this way during development, not
+  assumed away.

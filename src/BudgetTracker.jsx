@@ -1,13 +1,12 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
-  Upload, TrendingUp, DollarSign, Calendar,
+  Upload, TrendingUp, DollarSign, Wallet2,
   BarChart3, CheckCircle2, AlertTriangle,
-  PiggyBank, Wallet, Repeat, CalendarDays, ShoppingBag,
+  Wallet, Repeat, CalendarDays, ShoppingBag,
   Layers,
 } from 'lucide-react';
 import {
-  LineChart, Line, BarChart, Bar, ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip,
-  Legend, ResponsiveContainer, PieChart, Pie, Cell,
+  Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
 import Papa from 'papaparse';
 
@@ -15,7 +14,7 @@ import { fmtEUR } from './lib/format';
 import { DEFAULT_CATEGORIES, withCategoryFallback } from './lib/categories';
 import { tooltipStyle, COLORS } from './lib/chartTheme';
 import { useCountUp } from './hooks/useCountUp';
-import { PrivacyContext, Amount, ChartTooltip } from './components/PrivacyContext';
+import { PrivacyContext, Amount } from './components/PrivacyContext';
 import ThemeStyles from './components/ThemeStyles';
 import AppHeader from './components/AppHeader';
 import TabNav from './components/TabNav';
@@ -29,44 +28,32 @@ import UnusualExpensesSection from './components/UnusualExpensesSection';
 import DistributedExpensesSection from './components/DistributedExpensesSection';
 import ExportDataSection from './components/ExportDataSection';
 
-const EMPTY_INCOME = {
-  severancePay: 0,
-  severanceForMonthly: 0,
-  unemploymentPay: 0,
-  sharesSold: 0,
-  freelancerWork: 0,
-  garageRent: 0,
-  flatRent: 0,
+// A rolling 12-month window starting this month, rather than a fixed historical
+// range — this mode has no career-transition end date to plan around.
+const buildMonths = () => {
+  const now = new Date();
+  return Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    return d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+  });
 };
 
-const SeveranceBudgetTracker = ({ onSwitchMode }) => {
+const BudgetTracker = ({ onSwitchMode }) => {
+  const months = useMemo(buildMonths, []);
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const [income, setIncome] = useState(() => {
-    const saved = localStorage.getItem('budgetTracker_severance_income');
-    if (saved) {
-      const parsedIncome = JSON.parse(saved);
-      return {
-        ...parsedIncome,
-        garageRent: parsedIncome.garageRent !== undefined ? parsedIncome.garageRent : 100,
-        flatRent: parsedIncome.flatRent !== undefined ? parsedIncome.flatRent : 0,
-      };
-    }
-    // Illustrative demo figures only — not anyone's real numbers. Shown to
-    // anyone who opens the app (or this repo) without their own data yet.
+    const saved = localStorage.getItem('budgetTracker_generic_income');
+    if (saved) return JSON.parse(saved);
+    // Illustrative demo figures only — a comfortable, ordinary household budget.
     return {
-      severancePay: 45000,
-      severanceForMonthly: 5000,
-      unemploymentPay: 1200,
-      sharesSold: 0,
-      freelancerWork: 300,
-      garageRent: 100,
-      flatRent: 0,
+      monthlyIncome: 2800,
+      otherIncome: 150,
     };
   });
 
   const [fixedMonthly, setFixedMonthly] = useState(() => {
-    const saved = localStorage.getItem('budgetTracker_severance_fixedMonthly');
+    const saved = localStorage.getItem('budgetTracker_generic_fixedMonthly');
     return saved
       ? withCategoryFallback(JSON.parse(saved))
       : [
@@ -79,14 +66,14 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
   });
 
   const [fixedAnnual, setFixedAnnual] = useState(() => {
-    const saved = localStorage.getItem('budgetTracker_severance_fixedAnnual');
+    const saved = localStorage.getItem('budgetTracker_generic_fixedAnnual');
     return saved
       ? withCategoryFallback(JSON.parse(saved))
       : [{ id: 1, name: 'Insurance', amount: 600, category: 'Household' }];
   });
 
   const [variableMonthly, setVariableMonthly] = useState(() => {
-    const saved = localStorage.getItem('budgetTracker_severance_variableMonthly');
+    const saved = localStorage.getItem('budgetTracker_generic_variableMonthly');
     return saved
       ? withCategoryFallback(JSON.parse(saved))
       : [
@@ -97,16 +84,20 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
   });
 
   const [unusualExpenses, setUnusualExpenses] = useState(() => {
-    const saved = localStorage.getItem('budgetTracker_severance_unusualExpenses');
+    const saved = localStorage.getItem('budgetTracker_generic_unusualExpenses');
     return saved
       ? withCategoryFallback(JSON.parse(saved))
       : [
-          { id: 1, name: 'New Laptop', amount: 1200, month: 'Sep 2025', isDefault: true, category: 'Shopping & Clothing' },
-          { id: 2, name: 'Car Repair', amount: 600, month: 'Oct 2025', isDefault: true, category: 'Transportation' },
-          { id: 3, name: 'Weekend Trip', amount: 400, month: 'Nov 2025', isDefault: true, category: 'Travel' },
+          { id: 1, name: 'New Laptop', amount: 1200, month: months[0], isDefault: true, category: 'Shopping & Clothing' },
+          { id: 2, name: 'Car Repair', amount: 600, month: months[1], isDefault: true, category: 'Transportation' },
+          { id: 3, name: 'Weekend Trip', amount: 400, month: months[2], isDefault: true, category: 'Travel' },
         ];
   });
 
+  // Categories, dark mode, and privacy-blur are shared preferences, not
+  // financial data — same localStorage keys as the severance tracker, so
+  // switching modes never disagrees with itself about how you like to view
+  // the app. Only the money (income/expenses above) is namespaced per mode.
   const [categories, setCategories] = useState(() => {
     const saved = localStorage.getItem('budgetTracker_categories');
     return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
@@ -124,12 +115,12 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
   };
 
   const [distributedExpenses, setDistributedExpenses] = useState(() => {
-    const saved = localStorage.getItem('budgetTracker_severance_distributedExpenses');
+    const saved = localStorage.getItem('budgetTracker_generic_distributedExpenses');
     return saved ? JSON.parse(saved) : [];
   });
 
   const [uploadedExpenses, setUploadedExpenses] = useState(() => {
-    const saved = localStorage.getItem('budgetTracker_severance_uploadedExpenses');
+    const saved = localStorage.getItem('budgetTracker_generic_uploadedExpenses');
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -154,10 +145,9 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
     localStorage.setItem('budgetTracker_darkMode', darkMode.toString());
   }, [darkMode]);
 
-  // Income/expense palette (testing): the requested pastels (#BAD7B6 / #D7C0EC)
-  // read beautifully as text/chart marks against the dark surface (~12:1 and
-  // ~11:1 contrast) but fail badly against white (~1.6:1) — so light mode uses
-  // a deepened variant of the same hue instead of the literal pastel.
+  // Same reasoning as the severance tracker: the literal pastel palette reads
+  // beautifully on the dark surface but fails contrast on white, so light mode
+  // uses a deepened variant of the same hue.
   const incomeColor = darkMode ? '#55D6A7' : '#20835F';
   const expenseColor = darkMode ? '#D7C0EC' : '#9251CD';
 
@@ -173,31 +163,31 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
   const firstRender = useRef(true);
 
   useEffect(() => {
-    localStorage.setItem('budgetTracker_severance_income', JSON.stringify(income));
+    localStorage.setItem('budgetTracker_generic_income', JSON.stringify(income));
   }, [income]);
 
   useEffect(() => {
-    localStorage.setItem('budgetTracker_severance_fixedMonthly', JSON.stringify(fixedMonthly));
+    localStorage.setItem('budgetTracker_generic_fixedMonthly', JSON.stringify(fixedMonthly));
   }, [fixedMonthly]);
 
   useEffect(() => {
-    localStorage.setItem('budgetTracker_severance_fixedAnnual', JSON.stringify(fixedAnnual));
+    localStorage.setItem('budgetTracker_generic_fixedAnnual', JSON.stringify(fixedAnnual));
   }, [fixedAnnual]);
 
   useEffect(() => {
-    localStorage.setItem('budgetTracker_severance_variableMonthly', JSON.stringify(variableMonthly));
+    localStorage.setItem('budgetTracker_generic_variableMonthly', JSON.stringify(variableMonthly));
   }, [variableMonthly]);
 
   useEffect(() => {
-    localStorage.setItem('budgetTracker_severance_unusualExpenses', JSON.stringify(unusualExpenses));
+    localStorage.setItem('budgetTracker_generic_unusualExpenses', JSON.stringify(unusualExpenses));
   }, [unusualExpenses]);
 
   useEffect(() => {
-    localStorage.setItem('budgetTracker_severance_distributedExpenses', JSON.stringify(distributedExpenses));
+    localStorage.setItem('budgetTracker_generic_distributedExpenses', JSON.stringify(distributedExpenses));
   }, [distributedExpenses]);
 
   useEffect(() => {
-    localStorage.setItem('budgetTracker_severance_uploadedExpenses', JSON.stringify(uploadedExpenses));
+    localStorage.setItem('budgetTracker_generic_uploadedExpenses', JSON.stringify(uploadedExpenses));
   }, [uploadedExpenses]);
 
   useEffect(() => {
@@ -209,18 +199,6 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
     const t = setTimeout(() => setShowSavedPing(false), 1600);
     return () => clearTimeout(t);
   }, [income, fixedMonthly, fixedAnnual, variableMonthly, unusualExpenses, distributedExpenses]);
-
-  const months = [
-    'Sep 2025', 'Oct 2025', 'Nov 2025', 'Dec 2025', 'Jan 2026', 'Feb 2026',
-    'Mar 2026', 'Apr 2026', 'May 2026', 'Jun 2026', 'Jul 2026', 'Aug 2026', 'Sep 2026',
-  ];
-
-  const quarters = [
-    { name: 'Q4 2025', months: ['Sep 2025', 'Oct 2025', 'Nov 2025', 'Dec 2025'] },
-    { name: 'Q1 2026', months: ['Jan 2026', 'Feb 2026', 'Mar 2026'] },
-    { name: 'Q2 2026', months: ['Apr 2026', 'May 2026', 'Jun 2026'] },
-    { name: 'Q3 2026', months: ['Jul 2026', 'Aug 2026', 'Sep 2026'] },
-  ];
 
   const processCsvFile = (file) => {
     if (!file) return;
@@ -266,20 +244,15 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
     };
     downloadBlob(
       JSON.stringify(data, null, 2),
-      `budget-safety-net-${new Date().toISOString().slice(0, 10)}.json`,
+      `budget-tracker-${new Date().toISOString().slice(0, 10)}.json`,
       'application/json'
     );
   };
 
   const handleExportCSV = () => {
     const rows = [
-      { Section: 'Income', Name: 'Severance pay (total)', Category: '', Amount: income.severancePay, Month: '', Notes: '' },
-      { Section: 'Income', Name: 'Severance allocated to monthly income', Category: '', Amount: income.severanceForMonthly, Month: '', Notes: '' },
-      { Section: 'Income', Name: 'Unemployment insurance (monthly)', Category: '', Amount: income.unemploymentPay, Month: '', Notes: '' },
-      { Section: 'Income', Name: 'Shares sold (total)', Category: '', Amount: income.sharesSold, Month: '', Notes: '' },
-      { Section: 'Income', Name: 'Freelance work (total)', Category: '', Amount: income.freelancerWork, Month: '', Notes: '' },
-      { Section: 'Income', Name: 'Garage rent (monthly)', Category: '', Amount: income.garageRent, Month: '', Notes: '' },
-      { Section: 'Income', Name: 'Flat rent (monthly)', Category: '', Amount: income.flatRent, Month: '', Notes: '' },
+      { Section: 'Income', Name: 'Monthly income', Category: '', Amount: income.monthlyIncome, Month: '', Notes: '' },
+      { Section: 'Income', Name: 'Other income (monthly)', Category: '', Amount: income.otherIncome, Month: '', Notes: '' },
     ];
     fixedMonthly.forEach((i) => rows.push({ Section: 'Fixed Monthly Expense', Name: i.name, Category: i.category || '', Amount: i.amount, Month: '', Notes: '' }));
     fixedAnnual.forEach((i) => rows.push({ Section: 'Fixed Annual Expense', Name: i.name, Category: i.category || '', Amount: i.amount, Month: '', Notes: '' }));
@@ -308,13 +281,13 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
 
     downloadBlob(
       Papa.unparse(rows),
-      `budget-safety-net-${new Date().toISOString().slice(0, 10)}.csv`,
+      `budget-tracker-${new Date().toISOString().slice(0, 10)}.csv`,
       'text/csv;charset=utf-8;'
     );
   };
 
   // Period-backup/reset flow (step 7): download a full backup, then clear
-  // this mode's data only — never the other mode's, since it lives in its
+  // this mode's data only — never severance mode's, since it lives in its
   // own localStorage namespace. Kept undoable via the same snackbar pattern
   // every other delete in this app already uses.
   const startNewPeriod = () => {
@@ -324,7 +297,7 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
     };
     handleExportCSV();
     handleExportJSON();
-    setIncome(EMPTY_INCOME);
+    setIncome({ monthlyIncome: 0, otherIncome: 0 });
     setFixedMonthly([]);
     setFixedAnnual([]);
     setVariableMonthly([]);
@@ -350,7 +323,7 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
 
   const addUnusualExpense = () => {
     const newExpense = {
-      id: Date.now(), name: '', amount: 0, month: 'Sep 2025', isDefault: false, category: 'Miscellaneous',
+      id: Date.now(), name: '', amount: 0, month: months[0], isDefault: false, category: 'Miscellaneous',
     };
     setUnusualExpenses([...unusualExpenses, newExpense]);
     setEditingExpense({ type: 'unusual', id: newExpense.id });
@@ -363,7 +336,7 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
       totalAmount: 0,
       monthlyAmount: 0,
       months: 6,
-      startMonth: 'Sep 2025',
+      startMonth: months[0],
     };
     setDistributedExpenses([...distributedExpenses, newExpense]);
     setEditingExpense({ type: 'distributed', id: newExpense.id });
@@ -398,96 +371,36 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
     );
   };
 
-  const monthlyFromSeverance = income.severanceForMonthly / 12;
   const totalFixedMonthly = fixedMonthly.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
   const totalVariableMonthly = variableMonthly.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
   const totalUnusualExpenses = unusualExpenses.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
   const totalAnnualExpenses = fixedAnnual.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+  const totalDistributedExpenses = distributedExpenses.reduce((sum, item) => sum + (parseFloat(item.totalAmount) || 0), 0);
+  const totalUploadedExpenses = uploadedExpenses.reduce(
+    (sum, expense) => sum + Math.abs(parseFloat(expense.Amount || expense.amount || 0)),
+    0
+  );
 
-  const expensesByMonth = useMemo(() => {
-    const byMonth = {};
-    uploadedExpenses.forEach((expense) => {
-      if (expense.Date || expense.date) {
-        const dateStr = expense.Date || expense.date;
-        const date = new Date(dateStr);
-        const monthKey = `${date.toLocaleString('en-US', { month: 'short' })} ${date.getFullYear()}`;
-
-        if (!byMonth[monthKey]) {
-          byMonth[monthKey] = { total: 0, categories: {} };
-        }
-
-        const amount = Math.abs(parseFloat(expense.Amount || expense.amount || 0));
-        const category = expense.Category || expense.category || 'Uncategorized';
-
-        byMonth[monthKey].total += amount;
-        byMonth[monthKey].categories[category] = (byMonth[monthKey].categories[category] || 0) + amount;
-      }
-    });
-    return byMonth;
-  }, [uploadedExpenses]);
-
-  const getDistributedExpenseForMonth = (monthIndex) => {
+  const getDistributedExpenseForThisMonth = () => {
     let total = 0;
     distributedExpenses.forEach((expense) => {
       const startIndex = months.indexOf(expense.startMonth);
-      const endIndex = startIndex + (expense.months || 0);
-      if (monthIndex >= startIndex && monthIndex < endIndex) {
+      if (startIndex === 0 || (startIndex <= 0 && startIndex + (expense.months || 0) > 0)) {
         total += parseFloat(expense.monthlyAmount) || 0;
       }
     });
     return total;
   };
 
-  const budgetData = months.map((month, index) => {
-    const monthlyIncome =
-      income.unemploymentPay +
-      monthlyFromSeverance +
-      income.freelancerWork / 13 +
-      income.sharesSold / 13 +
-      (income.garageRent || 0) +
-      (income.flatRent || 0);
-
-    const uploadedExpensesForMonth = expensesByMonth[month]?.total || 0;
-    const distributedForMonth = getDistributedExpenseForMonth(index);
-    const totalMonthlyExpenses = totalFixedMonthly + totalVariableMonthly + distributedForMonth;
-    const monthBalance = monthlyIncome - totalMonthlyExpenses - uploadedExpensesForMonth;
-
-    return {
-      month,
-      income: parseFloat(monthlyIncome.toFixed(2)),
-      totalExpenses: parseFloat((totalMonthlyExpenses + uploadedExpensesForMonth).toFixed(2)),
-      balance: parseFloat(monthBalance.toFixed(2)),
-      cumulative: 0,
-    };
-  });
-
-  let cumulativeBalance = income.severancePay - income.severanceForMonthly - totalUnusualExpenses - totalAnnualExpenses;
-  budgetData.forEach((month) => {
-    cumulativeBalance += month.balance;
-    month.cumulative = parseFloat(cumulativeBalance.toFixed(2));
-  });
-
-  const quarterlyData = quarters.map((quarter) => {
-    const quarterMonths = budgetData.filter((m) => quarter.months.includes(m.month));
-    return {
-      quarter: quarter.name,
-      income: quarterMonths.reduce((sum, m) => sum + m.income, 0),
-      expenses: quarterMonths.reduce((sum, m) => sum + m.totalExpenses, 0),
-      balance: quarterMonths.reduce((sum, m) => sum + m.balance, 0),
-    };
-  });
-
-  const currentMonth = months[0];
-  const currentMonthData = budgetData[0];
-  const currentMonthBudget = currentMonthData.income;
-  const currentMonthActualExpenses = currentMonthData.totalExpenses;
-  const currentMonthRemaining = currentMonthBudget - currentMonthActualExpenses;
+  const currentMonthLabel = months[0];
+  const monthlyIncomeTotal = (parseFloat(income.monthlyIncome) || 0) + (parseFloat(income.otherIncome) || 0);
+  const currentMonthExpenses = totalFixedMonthly + totalVariableMonthly + getDistributedExpenseForThisMonth();
+  const currentMonthRemaining = monthlyIncomeTotal - currentMonthExpenses;
   const monthStatus =
-    currentMonthRemaining < 0 ? 'over' : currentMonthRemaining < currentMonthBudget * 0.2 ? 'caution' : 'ok';
+    currentMonthRemaining < 0 ? 'over' : currentMonthRemaining < monthlyIncomeTotal * 0.2 ? 'caution' : 'ok';
 
-  // Unified spending-by-category view: manually-typed expenses (fixed, annual,
-  // variable, one-off) and uploaded CSV rows all feed the same totals, keyed by
-  // the same category names, instead of two disconnected category systems.
+  // Unified spending-by-category view: manually-typed expenses and uploaded
+  // CSV rows all feed the same totals, keyed by the same category names.
   const categoryData = useMemo(() => {
     const totals = {};
     const add = (category, amount) => {
@@ -511,50 +424,20 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
       .slice(0, 8);
   }, [fixedMonthly, fixedAnnual, variableMonthly, unusualExpenses, uploadedExpenses]);
 
-  const COLORS = ['#375DFB', '#7C4DFF', '#00ACC1', '#F4A300', '#FF6F61', '#43A047', '#8D6E63', '#5C6BC0'];
-
-  const totalUploadedExpenses = uploadedExpenses.reduce(
-    (sum, expense) => sum + Math.abs(parseFloat(expense.Amount || expense.amount || 0)),
-    0
-  );
-  const totalDistributedExpenses = distributedExpenses.reduce(
-    (sum, item) => sum + (parseFloat(item.totalAmount) || 0),
-    0
-  );
-
-  const overallMoneyIn =
-    income.severancePay +
-    income.unemploymentPay * 13 +
-    income.freelancerWork +
-    income.sharesSold +
-    (income.garageRent + income.flatRent) * 13;
-  const overallMoneySpent =
-    totalAnnualExpenses +
-    totalUnusualExpenses +
-    totalFixedMonthly * 13 +
-    totalVariableMonthly * 13 +
-    totalDistributedExpenses +
-    totalUploadedExpenses;
-  const overallRemaining = overallMoneyIn - overallMoneySpent;
-  const overallUsagePercent = overallMoneyIn > 0 ? (overallMoneySpent / overallMoneyIn) * 100 : 0;
-
+  // Annualized (×12) so monthly, annual, and one-off figures sit on comparable
+  // footing — a normal calendar year, unlike the severance tracker's fixed
+  // 13-month career-transition horizon.
   const expenseCompositionData = [
-    { name: 'Fixed Monthly', value: totalFixedMonthly * 13 },
+    { name: 'Fixed Monthly', value: totalFixedMonthly * 12 },
     { name: 'Fixed Annual', value: totalAnnualExpenses },
-    { name: 'Variable Monthly', value: totalVariableMonthly * 13 },
+    { name: 'Variable Monthly', value: totalVariableMonthly * 12 },
     { name: 'One-off', value: totalUnusualExpenses },
     { name: 'Spread-out', value: totalDistributedExpenses },
   ].filter((d) => d.value > 0);
 
-  const currentSeveranceBalance = income.severancePay - income.severanceForMonthly - totalUnusualExpenses - totalAnnualExpenses;
-  const projectedEndBalance = budgetData[budgetData.length - 1]?.cumulative || 0;
-
-  const monthlyBurn = totalFixedMonthly + totalVariableMonthly;
-  const runwayMonths = monthlyBurn > 0 ? currentSeveranceBalance / monthlyBurn : null;
-
-  const heroSeverance = useCountUp(currentSeveranceBalance);
-  const heroIncome = useCountUp(currentMonthBudget);
-  const heroProjected = useCountUp(projectedEndBalance);
+  const heroIncome = useCountUp(monthlyIncomeTotal);
+  const heroExpenses = useCountUp(currentMonthExpenses);
+  const heroRemaining = useCountUp(currentMonthRemaining);
 
   const STATUS_BANNER = {
     over: { bg: 'bg-[#FDEDEA]', text: 'text-[#5C1A14]', Icon: AlertTriangle, message: 'You are over budget this month.' },
@@ -562,28 +445,10 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
       bg: 'bg-[#FFF6E5]', text: 'text-[#5C4200]', Icon: AlertTriangle,
       message: "Less than 20% of this month's budget remains.",
     },
-    ok: { bg: 'bg-[#E7F6EC]', text: 'text-[#0D3D1D]', Icon: CheckCircle2, message: "You're on track — nice work protecting your runway." },
+    ok: { bg: 'bg-[#E7F6EC]', text: 'text-[#0D3D1D]', Icon: CheckCircle2, message: "You're on track this month." },
   };
   const bannerInfo = STATUS_BANNER[monthStatus];
   const BannerIcon = bannerInfo.Icon;
-
-  const overallStatus = overallRemaining < 0 ? 'over' : overallUsagePercent > 80 ? 'caution' : 'ok';
-  const OVERALL_STATUS_BANNER = {
-    over: {
-      bg: 'bg-[#FDEDEA]', text: 'text-[#5C1A14]', Icon: AlertTriangle,
-      message: 'Projected to spend more than comes in over the full plan — worth a closer look.',
-    },
-    caution: {
-      bg: 'bg-[#FFF6E5]', text: 'text-[#5C4200]', Icon: AlertTriangle,
-      message: "You've committed most of your total funds — keep an eye on the months ahead.",
-    },
-    ok: {
-      bg: 'bg-[#E7F6EC]', text: 'text-[#0D3D1D]', Icon: CheckCircle2,
-      message: 'On track overall — the plan holds up well through Sep 2026.',
-    },
-  };
-  const overallBannerInfo = OVERALL_STATUS_BANNER[overallStatus];
-  const OverallBannerIcon = overallBannerInfo.Icon;
 
   return (
     <PrivacyContext.Provider value={hideAmounts}>
@@ -591,10 +456,10 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
       <ThemeStyles />
 
       <AppHeader
-        icon={PiggyBank}
+        icon={Wallet2}
         iconBg="#132A1D"
-        title="Budget Safety Net"
-        subtitle="Sep 2025 – Sep 2026 · career transition runway"
+        title="Budget Tracker"
+        subtitle="Everyday income & expenses"
         darkMode={darkMode}
         setDarkMode={setDarkMode}
         showSavedPing={showSavedPing}
@@ -618,41 +483,40 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
               <StatCard
                 icon={DollarSign}
-                label="Available Severance"
-                value={<Amount value={heroSeverance} />}
-                tone="success"
-                sub={runwayMonths !== null ? `≈ ${runwayMonths.toFixed(1)} months of runway at current spend` : undefined}
+                label="Monthly Income"
+                value={<Amount value={heroIncome} />}
+                tone="primary"
+                sub="Income + other sources"
                 delay={0}
               />
               <StatCard
-                icon={Calendar}
-                label="Monthly Income (this month)"
-                value={<Amount value={heroIncome} />}
-                tone="primary"
-                sub="Unemployment insurance + severance + rent"
+                icon={ShoppingBag}
+                label="Monthly Expenses"
+                value={<Amount value={heroExpenses} />}
+                tone="accent"
+                sub="Fixed + variable spending"
                 delay={80}
               />
               <StatCard
-                icon={PiggyBank}
-                label="Projected Balance (Sep 2026)"
-                value={<Amount value={heroProjected} />}
-                tone={projectedEndBalance >= 0 ? 'accent' : 'warn'}
-                sub={projectedEndBalance >= 0 ? 'On pace to end with a cushion' : 'On pace to run out before Sep 2026'}
+                icon={Wallet2}
+                label={`Remaining (${currentMonthLabel})`}
+                value={<Amount value={heroRemaining} />}
+                tone={currentMonthRemaining >= 0 ? 'success' : 'warn'}
+                sub={currentMonthRemaining >= 0 ? "On track this month" : 'Over budget this month'}
                 delay={160}
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <SectionCard title={`Current Month: ${currentMonth}`} icon={TrendingUp} delay={120} className="flex h-full flex-col">
-              <div className="mb-6 flex-1 grid grid-cols-1 gap-6 md:grid-cols-2">
+            <SectionCard title={`This Month: ${currentMonthLabel}`} icon={TrendingUp} delay={120}>
+              <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div>
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-sm font-medium text-[#46464F]">Monthly Budget</span>
-                    <span className="text-base font-semibold text-[#375DFB]"><Amount value={currentMonthBudget} /></span>
+                    <span className="text-base font-semibold" style={{ color: incomeColor }}><Amount value={monthlyIncomeTotal} /></span>
                   </div>
                   <div className="mb-4 flex items-center justify-between">
                     <span className="text-sm font-medium text-[#46464F]">Planned Expenses</span>
-                    <span className="text-base font-semibold" style={{ color: expenseColor }}><Amount value={currentMonthData.totalExpenses} /></span>
+                    <span className="text-base font-semibold" style={{ color: expenseColor }}><Amount value={currentMonthExpenses} /></span>
                   </div>
                   <div className="border-t border-black/5 pt-4">
                     <div className="flex items-center justify-between">
@@ -671,7 +535,7 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
                         <Pie
                           data={[
                             { name: 'Remaining', value: Math.max(0, currentMonthRemaining) },
-                            { name: 'Spent', value: currentMonthActualExpenses },
+                            { name: 'Spent', value: currentMonthExpenses },
                           ]}
                           cx="50%"
                           cy="50%"
@@ -695,7 +559,7 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
                     <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                       <span className="text-sm text-[#79747E]">Budget Usage</span>
                       <span className="text-2xl font-bold text-[#1B1B21]">
-                        {((currentMonthActualExpenses / currentMonthBudget) * 100).toFixed(0)}%
+                        {monthlyIncomeTotal > 0 ? ((currentMonthExpenses / monthlyIncomeTotal) * 100).toFixed(0) : 0}%
                       </span>
                     </div>
                   </div>
@@ -707,70 +571,6 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
                 <p className="text-sm font-medium">{bannerInfo.message}</p>
               </div>
             </SectionCard>
-
-            <SectionCard title="Overall Summary" icon={BarChart3} delay={0} className="flex h-full flex-col">
-              <div className="mb-2 flex-1 grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm font-medium text-[#46464F]">Total Money In</span>
-                    <span className="text-base font-semibold" style={{ color: incomeColor }}><Amount value={overallMoneyIn} /></span>
-                  </div>
-                  <div className="mb-4 flex items-center justify-between">
-                    <span className="text-sm font-medium text-[#46464F]">Total Money Spent</span>
-                    <span className="text-base font-semibold" style={{ color: expenseColor }}><Amount value={overallMoneySpent} /></span>
-                  </div>
-                  <div className="border-t border-black/5 pt-4">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-[#1B1B21]">Net Remaining</span>
-                      <span className={`text-2xl font-bold ${overallRemaining >= 0 ? 'text-[#1E8E3E]' : 'text-[#B3261E]'}`}>
-                        <Amount value={overallRemaining} />
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <ExpandingChart baseHeight={220} expandedHeight={250}>
-                  <div className="relative h-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={[
-                            { name: 'Remaining', value: Math.max(0, overallRemaining) },
-                            { name: 'Spent', value: overallMoneySpent },
-                          ]}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={90}
-                          paddingAngle={5}
-                          cornerRadius={8}
-                          stroke="none"
-                          dataKey="value"
-                        >
-                          <Cell fill="#1E8E3E" />
-                          <Cell fill={expenseColor} />
-                        </Pie>
-                        <Tooltip
-                          formatter={(value) => (hideAmounts ? '•••••' : fmtEUR(value))}
-                          contentStyle={tooltipStyle}
-                          position={{ y: 175 }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-sm text-[#79747E]">Overall Usage</span>
-                      <span className="text-2xl font-bold text-[#1B1B21]">{overallUsagePercent.toFixed(0)}%</span>
-                    </div>
-                  </div>
-                </ExpandingChart>
-              </div>
-
-              <div className={`flex items-center gap-3 rounded-2xl ${overallBannerInfo.bg} ${overallBannerInfo.text} px-4 py-3.5`}>
-                <OverallBannerIcon size={18} className={overallStatus === 'ok' ? 'animate-pulse-soft' : ''} />
-                <p className="text-sm font-medium">{overallBannerInfo.message}</p>
-              </div>
-            </SectionCard>
-            </div>
 
             {categoryData.length > 0 && (
               <SectionCard title="Expense Breakdown by Category" icon={ShoppingBag} delay={0}>
@@ -799,39 +599,6 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
                 </ExpandingChart>
               </SectionCard>
             )}
-
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <SectionCard title="Quarterly Overview" icon={BarChart3} delay={0}>
-              <ExpandingChart baseHeight={300} expandedHeight={330}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={quarterlyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E1E1EA" />
-                    <XAxis dataKey="quarter" tick={{ fill: '#46464F', fontSize: 12 }} axisLine={{ stroke: '#E1E1EA' }} />
-                    <YAxis tick={{ fill: '#46464F', fontSize: 12 }} axisLine={{ stroke: '#E1E1EA' }} />
-                    <Tooltip
-                      content={<ChartTooltip />}
-                      cursor={{ fill: '#375DFB', fillOpacity: 0.15 }}
-                      wrapperStyle={{ transition: 'transform 200ms cubic-bezier(0.2, 0, 0, 1)' }}
-                      animationDuration={200}
-                      animationEasing="ease-out"
-                    />
-                    <Legend />
-                    <Bar dataKey="income" fill={incomeColor} name="Income" radius={[10, 10, 10, 10]} />
-                    <Bar dataKey="expenses" fill={expenseColor} name="Expenses" radius={[10, 10, 10, 10]} />
-                    <Line
-                      type="natural"
-                      dataKey="balance"
-                      stroke="#375DFB"
-                      strokeWidth={3}
-                      strokeLinecap="round"
-                      name="Net Balance"
-                      dot={{ r: 4, fill: '#375DFB', strokeWidth: 0 }}
-                      activeDot={{ r: 6 }}
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </ExpandingChart>
-            </SectionCard>
 
             <SectionCard title="Expense Composition" icon={Layers} delay={0}>
               <ExpandingChart baseHeight={300} expandedHeight={330}>
@@ -862,83 +629,28 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
                 </ResponsiveContainer>
               </ExpandingChart>
             </SectionCard>
-            </div>
-
-            <SectionCard title="13-Month Projection" icon={TrendingUp} delay={0}>
-              <ExpandingChart baseHeight={380} expandedHeight={420}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={budgetData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E1E1EA" />
-                    <XAxis
-                      dataKey="month"
-                      angle={-45}
-                      textAnchor="end"
-                      height={90}
-                      tick={{ fill: '#46464F', fontSize: 11 }}
-                      axisLine={{ stroke: '#E1E1EA' }}
-                    />
-                    <YAxis tick={{ fill: '#46464F', fontSize: 12 }} axisLine={{ stroke: '#E1E1EA' }} />
-                    <Tooltip formatter={(value) => (hideAmounts ? '•••••' : fmtEUR(value))} contentStyle={tooltipStyle} />
-                    <Legend />
-                    <Line type="natural" dataKey="income" stroke={incomeColor} strokeWidth={2} strokeLinecap="round" name="Monthly Income" dot={false} />
-                    <Line type="natural" dataKey="totalExpenses" stroke={expenseColor} strokeWidth={2} strokeLinecap="round" name="Total Expenses" dot={false} />
-                    <Line type="natural" dataKey="cumulative" stroke="#375DFB" strokeWidth={3} strokeLinecap="round" name="Cumulative Balance" dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ExpandingChart>
-            </SectionCard>
           </div>
         )}
 
         {activeTab === 'settings' && (
           <div key="settings" className="animate-fadein space-y-6">
-            <SectionCard
-              title="Income Sources"
-              icon={Wallet}
-              delay={0}
-            >
+            <SectionCard title="Income Sources" icon={Wallet} delay={0}>
               <div className="mb-5 flex items-center justify-between rounded-2xl bg-[#F5F2FA] px-4 py-3">
                 <span className="text-sm font-medium text-[#46464F]">Estimated monthly income</span>
-                <span className="text-lg font-semibold text-[#375DFB]"><Amount value={currentMonthBudget} digits={2} /></span>
+                <span className="text-lg font-semibold text-[#375DFB]"><Amount value={monthlyIncomeTotal} digits={2} /></span>
               </div>
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
                 <NumberField
-                  label="Severance pay (total)"
-                  value={income.severancePay}
-                  onChange={(v) => setIncome({ ...income, severancePay: v })}
+                  label="Monthly income"
+                  value={income.monthlyIncome}
+                  onChange={(v) => setIncome({ ...income, monthlyIncome: v })}
+                  help="Salary or wage, after tax"
                 />
                 <NumberField
-                  label="Severance allocated to monthly income"
-                  value={income.severanceForMonthly}
-                  onChange={(v) => setIncome({ ...income, severanceForMonthly: v })}
-                  help={<>Spread over 12 months → <Amount value={monthlyFromSeverance} digits={2} />/mo</>}
-                />
-                <NumberField
-                  label="Unemployment insurance (monthly)"
-                  value={income.unemploymentPay}
-                  onChange={(v) => setIncome({ ...income, unemploymentPay: v })}
-                />
-                <NumberField
-                  label="Shares sold (total)"
-                  value={income.sharesSold}
-                  onChange={(v) => setIncome({ ...income, sharesSold: v })}
-                  help="Spread evenly across the 13-month plan"
-                />
-                <NumberField
-                  label="Freelance work (total)"
-                  value={income.freelancerWork}
-                  onChange={(v) => setIncome({ ...income, freelancerWork: v })}
-                  help="Spread evenly across the 13-month plan"
-                />
-                <NumberField
-                  label="Garage rent (monthly)"
-                  value={income.garageRent}
-                  onChange={(v) => setIncome({ ...income, garageRent: v })}
-                />
-                <NumberField
-                  label="Flat rent (monthly)"
-                  value={income.flatRent}
-                  onChange={(v) => setIncome({ ...income, flatRent: v })}
+                  label="Other income (monthly)"
+                  value={income.otherIncome}
+                  onChange={(v) => setIncome({ ...income, otherIncome: v })}
+                  help="Freelance, rental, side income, etc."
                 />
               </div>
             </SectionCard>
@@ -1075,4 +787,4 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
   );
 };
 
-export default SeveranceBudgetTracker;
+export default BudgetTracker;
