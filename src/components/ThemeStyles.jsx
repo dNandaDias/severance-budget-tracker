@@ -59,6 +59,7 @@ const ThemeStyles = () => (
     html.dark [class*="text-[#B36B00]"] { color: #FFC069 !important; }
     html.dark [class*="text-[#5C4200]"] { color: #FFE8B3 !important; }
     html.dark [class*="text-[#1B2559]"] { color: #C7D2FF !important; }
+    html.dark [class*="text-[#3255E4]"] { color: #7C93FF !important; }
     html.dark [class*="border-[#C6C6D0]"] { border-color: #3A3742 !important; }
     html.dark [class*="border-black/5"] { border-color: rgba(255,255,255,0.1) !important; }
     html.dark input, html.dark select { color: #F0F0F5; }

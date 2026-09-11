@@ -16,14 +16,14 @@ const DistributedExpensesSection = ({
       actions={
         <button
           onClick={() => setOpen((o) => !o)}
-          className="flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium text-[#375DFB] transition-colors hover:bg-[#EEF1FF]"
+          className="flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium text-[#3255E4] transition-colors hover:bg-[#EEF1FF]"
         >
           {open ? 'Hide' : 'Show'} {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
       }
     >
       <p className="mb-4 text-sm text-[#79747E]">
-        A big cost split evenly across several months — e.g. €3,000 of dental work spread over 6 months.
+        A big cost split evenly across several months, like €3,000 of dental work spread over 6 months.
       </p>
       {open && (
         <>
@@ -98,7 +98,7 @@ const DistributedExpensesSection = ({
                       <span className="text-sm font-semibold text-[#1B1B21]"><Amount value={item.monthlyAmount} digits={2} />/mo</span>
                       <button
                         onClick={() => setEditingExpense({ type: 'distributed', id: item.id })}
-                        className="rounded-full p-2 text-[#79747E] transition-colors hover:bg-[#E3E8FF] hover:text-[#375DFB]"
+                        className="rounded-full p-2 text-[#79747E] transition-colors hover:bg-[#E3E8FF] hover:text-[#3255E4]"
                         title="Edit"
                       >
                         <Edit2 size={15} />
@@ -118,7 +118,7 @@ const DistributedExpensesSection = ({
           </div>
           <button
             onClick={onAdd}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#C6C6D0] py-3 text-sm font-medium text-[#375DFB] transition-colors hover:border-[#375DFB] hover:bg-[#EEF1FF]"
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#C6C6D0] py-3 text-sm font-medium text-[#3255E4] transition-colors hover:border-[#375DFB] hover:bg-[#EEF1FF]"
           >
             <Plus size={16} /> Add spread-out expense
           </button>

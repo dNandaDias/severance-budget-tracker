@@ -12,7 +12,7 @@ const ExportDataSection = ({ onExportCSV, onExportJSON, onStartFresh, delay = 0 
   return (
     <SectionCard title="Export Data" icon={Download} delay={delay}>
       <p className="mb-4 text-sm text-[#79747E]">
-        Download everything you've entered — income, expenses, and uploads — as a spreadsheet-friendly
+        Download everything you've entered (income, expenses, and uploads) as a spreadsheet-friendly
         CSV or a raw JSON backup.
       </p>
       <div className="flex flex-col gap-3 sm:flex-row">
@@ -46,7 +46,7 @@ const ExportDataSection = ({ onExportCSV, onExportJSON, onStartFresh, delay = 0 
       <ConfirmDialog
         open={confirmOpen}
         title="Start a new period?"
-        message="This downloads a CSV and JSON backup of everything currently entered here, then clears it so you can start fresh. Your backup file becomes the only full copy — but if you change your mind right after, the clear itself can still be undone from the confirmation that appears."
+        message="This downloads a CSV and JSON backup of everything currently entered here, then clears it so you can start fresh. Your backup file becomes the only full copy, but if you change your mind right after, the clear itself can still be undone from the confirmation that appears."
         confirmLabel="Download & start fresh"
         onCancel={() => setConfirmOpen(false)}
         onConfirm={() => {

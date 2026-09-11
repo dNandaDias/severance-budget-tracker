@@ -7,7 +7,7 @@ const MODES = [
     icon: Wallet2,
     title: 'Usual Budget',
     description:
-      'Everyday income and expenses, categorized, with clear monthly and spending-by-category breakdowns. For ongoing, month-to-month budgeting.',
+      'Everyday income and expenses, categorised, with clear monthly and spending-by-category breakdowns. For ongoing, month-to-month budgeting.',
     fill: '#375DFB',
   },
   {
@@ -15,7 +15,7 @@ const MODES = [
     icon: PiggyBank,
     title: 'Severance / Career Transition',
     description:
-      'A severance payout draining over time, alongside income and expenses, with a runway projection — for tracking a fixed career-transition period.',
+      'A severance payout draining over time, alongside income and expenses, with a runway projection, for tracking a fixed career-transition period.',
     fill: '#55D6A7',
     fillText: '#0D3D1D',
   },
@@ -48,7 +48,7 @@ const ModePicker = ({ onSelect }) => (
                 {mode.title}
               </h2>
               <p className="mt-2 flex-1 text-sm leading-relaxed text-[#46464F]">{mode.description}</p>
-              <span className="mt-5 flex items-center gap-1.5 text-sm font-semibold text-[#375DFB]">
+              <span className="mt-5 flex items-center gap-1.5 text-sm font-semibold text-[#3255E4]">
                 Choose
                 <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
               </span>
@@ -58,7 +58,7 @@ const ModePicker = ({ onSelect }) => (
       </div>
 
       <p className="mt-8 text-center text-sm text-[#79747E]">
-        Each mode keeps its own separate data — switching later never overwrites the other.
+        Each mode keeps its own separate data: switching later never overwrites the other.
       </p>
     </div>
   </div>

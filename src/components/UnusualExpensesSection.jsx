@@ -15,11 +15,11 @@ const UnusualExpensesSection = ({
     icon={Sparkles}
     delay={delay}
     actions={
-      <span className="rounded-full bg-[#EFECF4] px-3 py-1 text-sm font-semibold text-[#375DFB]"><Amount value={total} /></span>
+      <span className="rounded-full bg-[#EFECF4] px-3 py-1 text-sm font-semibold text-[#3255E4]"><Amount value={total} /></span>
     }
   >
     <p className="mb-4 text-sm text-[#79747E]">
-      Large, irregular costs that hit a single month — a deposit, a big trip, a new laptop.
+      Large, irregular costs that hit a single month: a deposit, a big trip, a new laptop.
     </p>
     <div className="space-y-2">
       {items.length === 0 && (
@@ -87,7 +87,7 @@ const UnusualExpensesSection = ({
                 <span className="text-sm font-semibold text-[#1B1B21]"><Amount value={item.amount} /></span>
                 <button
                   onClick={() => setEditingExpense({ type: 'unusual', id: item.id })}
-                  className="rounded-full p-2 text-[#79747E] transition-colors hover:bg-[#E3E8FF] hover:text-[#375DFB]"
+                  className="rounded-full p-2 text-[#79747E] transition-colors hover:bg-[#E3E8FF] hover:text-[#3255E4]"
                   title="Edit"
                 >
                   <Edit2 size={15} />
@@ -107,7 +107,7 @@ const UnusualExpensesSection = ({
     </div>
     <button
       onClick={onAdd}
-      className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#C6C6D0] py-3 text-sm font-medium text-[#375DFB] transition-colors hover:border-[#375DFB] hover:bg-[#EEF1FF]"
+      className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#C6C6D0] py-3 text-sm font-medium text-[#3255E4] transition-colors hover:border-[#375DFB] hover:bg-[#EEF1FF]"
     >
       <Plus size={16} /> Add one-off expense
     </button>

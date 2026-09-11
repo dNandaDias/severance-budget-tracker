@@ -209,7 +209,7 @@ const BudgetTracker = ({ onSwitchMode }) => {
       skipEmptyLines: true,
       complete: (results) => {
         if (results.errors && results.errors.length > 0) {
-          setCsvError(`${results.errors.length} row(s) couldn't be read — please check the file format.`);
+          setCsvError(`${results.errors.length} row(s) couldn't be read. Please check the file format.`);
         }
         setUploadedExpenses(results.data);
         showSnackbar(`${results.data.length} expense rows imported`);
@@ -271,8 +271,8 @@ const BudgetTracker = ({ onSwitchMode }) => {
     uploadedExpenses.forEach((e) =>
       rows.push({
         Section: 'Uploaded Expense',
-        Name: e.Category || e.category || 'Uncategorized',
-        Category: e.Category || e.category || 'Uncategorized',
+        Name: e.Category || e.category || 'Uncategorised',
+        Category: e.Category || e.category || 'Uncategorised',
         Amount: e.Amount || e.amount || 0,
         Month: e.Date || e.date || '',
         Notes: '',
@@ -304,7 +304,7 @@ const BudgetTracker = ({ onSwitchMode }) => {
     setUnusualExpenses([]);
     setDistributedExpenses([]);
     setUploadedExpenses([]);
-    showSnackbar('Backup downloaded — this period cleared for a fresh start', () => {
+    showSnackbar('Backup downloaded. This period is cleared for a fresh start', () => {
       setIncome(snapshot.income);
       setFixedMonthly(snapshot.fixedMonthly);
       setFixedAnnual(snapshot.fixedAnnual);
@@ -413,7 +413,7 @@ const BudgetTracker = ({ onSwitchMode }) => {
     variableMonthly.forEach((item) => add(item.category, parseFloat(item.amount) || 0));
     unusualExpenses.forEach((item) => add(item.category, parseFloat(item.amount) || 0));
     uploadedExpenses.forEach((expense) => {
-      const category = expense.Category || expense.category || 'Uncategorized';
+      const category = expense.Category || expense.category || 'Uncategorised';
       const amount = Math.abs(parseFloat(expense.Amount || expense.amount || 0));
       add(category, amount);
     });
@@ -637,7 +637,7 @@ const BudgetTracker = ({ onSwitchMode }) => {
             <SectionCard title="Income Sources" icon={Wallet} delay={0}>
               <div className="mb-5 flex items-center justify-between rounded-2xl bg-[#F5F2FA] px-4 py-3">
                 <span className="text-sm font-medium text-[#46464F]">Estimated monthly income</span>
-                <span className="text-lg font-semibold text-[#375DFB]"><Amount value={monthlyIncomeTotal} digits={2} /></span>
+                <span className="text-lg font-semibold text-[#3255E4]"><Amount value={monthlyIncomeTotal} digits={2} /></span>
               </div>
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
                 <NumberField
@@ -724,7 +724,7 @@ const BudgetTracker = ({ onSwitchMode }) => {
                     dragActive ? 'border-[#375DFB] bg-[#EEF1FF]' : 'border-[#C6C6D0] bg-[#F5F2FA] hover:border-[#375DFB] hover:bg-[#EEF1FF]'
                   }`}
                 >
-                  <Upload className="text-[#375DFB]" size={26} />
+                  <Upload className="text-[#3255E4]" size={26} />
                   <span className="text-base font-medium text-[#1B1B21]">Drop a CSV here, or click to browse</span>
                   <span className="text-xs text-[#79747E]">Columns: Date, Amount, Category</span>
                   <input type="file" accept=".csv" onChange={handleCSVUpload} className="hidden" />

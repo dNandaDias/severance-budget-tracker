@@ -9,7 +9,7 @@ const TabNav = ({ tabs, activeTab, setActiveTab, hideAmounts, setHideAmounts }) 
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`relative flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-colors duration-200 ${
-              activeTab === tab.id ? 'bg-white text-[#375DFB] shadow-sm' : 'text-[#46464F] hover:text-[#1B1B21]'
+              activeTab === tab.id ? 'bg-white text-[#3255E4] shadow-sm' : 'text-[#46464F] hover:text-[#1B1B21]'
             }`}
           >
             <tab.icon size={17} />
@@ -19,7 +19,7 @@ const TabNav = ({ tabs, activeTab, setActiveTab, hideAmounts, setHideAmounts }) 
       </div>
       <button
         onClick={() => setHideAmounts((h) => !h)}
-        className="flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[#375DFB] shadow-sm transition-colors hover:bg-[#EEF1FF]"
+        className="flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[#3255E4] shadow-sm transition-colors hover:bg-[#EEF1FF]"
         title={hideAmounts ? 'Show amounts' : 'Hide amounts'}
         aria-label={hideAmounts ? 'Show amounts' : 'Hide amounts'}
       >

@@ -12,7 +12,7 @@ const SectionCard = ({ title, icon: Icon, children, actions, delay = 0, classNam
     >
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-[#1B1B21]">
-          {Icon ? <Icon size={19} className="text-[#375DFB]" /> : null}
+          {Icon ? <Icon size={19} className="text-[#3255E4]" /> : null}
           {title}
         </h2>
         {actions}

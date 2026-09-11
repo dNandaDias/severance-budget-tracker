@@ -1,20 +1,20 @@
 # Budget Tracker
 
-**[Live demo →](https://dnandadias.github.io/severance-budget-tracker/)** — no
+**[Live demo →](https://dnandadias.github.io/severance-budget-tracker/)**: no
 install, no cloning, just open the link. Redeploys automatically on every push to
 `main` via GitHub Actions.
 
 A personal budget tracker with two modes, chosen from a landing screen:
 
-- **Usual Budget** — everyday income and expenses, categorized, with monthly and
+- **Usual Budget**: everyday income and expenses, categorised, with monthly and
   spending-by-category breakdowns. For ongoing, month-to-month budgeting.
-- **Severance / Career Transition** — a severance payout draining over time,
+- **Severance / Career Transition**: a severance payout draining over time,
   alongside income and expenses, with a runway projection. Built first, for a real
   career-transition period; the generic mode came later, reusing the same
   components.
 
 Originally built as a Claude.ai artifact, then extracted into a proper local
-project and rebuilt into a two-mode app with categorized spending, CSV import/export,
+project and rebuilt into a two-mode app with categorised spending, CSV import/export,
 dark mode, and a privacy-blur toggle.
 
 ## Running it
@@ -27,7 +27,7 @@ npm run dev      # starts a dev server with hot reload
 npm run build    # production build to dist/
 ```
 
-There's a single entry point now — the Vite project. (An earlier zero-install
+There's a single entry point now: the Vite project. (An earlier zero-install
 `standalone.html` version existed for a while during development but was retired
 once the app grew a second mode; keeping a hand-copied duplicate of a two-mode,
 multi-file app in sync by hand stopped being worth it.)
@@ -36,12 +36,12 @@ multi-file app in sync by hand stopped being worth it.)
 
 - **Mode picker** on first visit; your choice is remembered, and a "Switch mode"
   button in the header takes you back to it any time.
-- **Categorized spending** — every expense (fixed, variable, one-off, or uploaded
+- **Categorised spending**: every expense (fixed, variable, one-off, or uploaded
   via CSV) can be tagged with a category, from a preset list or a custom one you
   add. One unified "Expense Breakdown by Category" chart across all of it.
 - **CSV import** for migrating from another budgeting tool or spreadsheet (expects
   Date/Amount/Category columns), plus **CSV and JSON export** of everything entered.
-- **"Start a new period"** — download a full backup, then clear a mode's data for a
+- **"Start a new period"**: download a full backup, then clear a mode's data for a
   fresh start (e.g. severance ending, a new job starting). Confirms first, and the
   clear itself is undoable for a few seconds. The other mode is never affected.
 - **Dark mode** and a **privacy-blur toggle** (for screen-sharing or screenshots),
@@ -77,7 +77,7 @@ severance-budget-tracker/
 ```
 
 Both trackers are separate top-level components (not one component with
-conditional sections) but share almost everything presentational — only the data
+conditional sections) but share almost everything presentational: only the data
 model and the dashboard's calculations differ between them.
 
 ## Data & state
@@ -87,16 +87,16 @@ Nothing is sent to a server; everything lives in `localStorage`.
 Each mode's financial data is **namespaced separately**, so switching modes never
 overwrites the other:
 
-- `budgetTracker_severance_*` — income, fixedMonthly, fixedAnnual, variableMonthly,
+- `budgetTracker_severance_*`: income, fixedMonthly, fixedAnnual, variableMonthly,
   unusualExpenses, distributedExpenses, uploadedExpenses (severance mode)
-- `budgetTracker_generic_*` — the same fields, for Usual Budget mode
+- `budgetTracker_generic_*`: the same fields, for Usual Budget mode
 
 A few things are **shared** across both modes, since they're viewing preferences
 or a personal taxonomy, not data tied to one period:
 
-- `budgetTracker_categories` — your preset + custom category list
-- `budgetTracker_darkMode`, `budgetTracker_hideAmounts` — appearance preferences
-- `budgetTracker_activeMode` — which mode the picker last sent you to
+- `budgetTracker_categories`: your preset + custom category list
+- `budgetTracker_darkMode`, `budgetTracker_hideAmounts`: appearance preferences
+- `budgetTracker_activeMode`: which mode the picker last sent you to
 
 ## Design notes
 
@@ -108,6 +108,6 @@ or a personal taxonomy, not data tied to one period:
   pulses on autosave, scroll-reveal + hover-expanding charts, a collapsible
   "Spread-out Expenses" section.
 - Checked against this workspace's `design-principles.md` (WCAG 2.2 contrast,
-  Gestalt grouping, Nielsen's heuristics) rather than just eyeballed — a couple of
+  Gestalt grouping, Nielsen's heuristics) rather than just eyeballed. A couple of
   real contrast bugs were found and fixed this way during development, not
   assumed away.

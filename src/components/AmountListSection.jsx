@@ -15,7 +15,7 @@ const AmountListSection = ({
     icon={Icon}
     delay={delay}
     actions={
-      <span className="rounded-full bg-[#EFECF4] px-3 py-1 text-sm font-semibold text-[#375DFB]">
+      <span className="rounded-full bg-[#EFECF4] px-3 py-1 text-sm font-semibold text-[#3255E4]">
         <Amount value={total} />
         <span className="ml-1 font-normal text-[#79747E]">/mo</span>
       </span>
@@ -79,7 +79,7 @@ const AmountListSection = ({
                 <span className="text-sm font-semibold text-[#1B1B21]"><Amount value={item.amount} /></span>
                 <button
                   onClick={() => setEditingExpense({ type: 'current', id: item.id })}
-                  className="rounded-full p-2 text-[#79747E] transition-colors hover:bg-[#E3E8FF] hover:text-[#375DFB]"
+                  className="rounded-full p-2 text-[#79747E] transition-colors hover:bg-[#E3E8FF] hover:text-[#3255E4]"
                   title="Edit"
                 >
                   <Edit2 size={15} />
@@ -99,7 +99,7 @@ const AmountListSection = ({
     </div>
     <button
       onClick={onAdd}
-      className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#C6C6D0] py-3 text-sm font-medium text-[#375DFB] transition-colors hover:border-[#375DFB] hover:bg-[#EEF1FF]"
+      className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#C6C6D0] py-3 text-sm font-medium text-[#3255E4] transition-colors hover:border-[#375DFB] hover:bg-[#EEF1FF]"
     >
       <Plus size={16} /> {addLabel}
     </button>

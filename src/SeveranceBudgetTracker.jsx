@@ -231,7 +231,7 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
       skipEmptyLines: true,
       complete: (results) => {
         if (results.errors && results.errors.length > 0) {
-          setCsvError(`${results.errors.length} row(s) couldn't be read — please check the file format.`);
+          setCsvError(`${results.errors.length} row(s) couldn't be read. Please check the file format.`);
         }
         setUploadedExpenses(results.data);
         showSnackbar(`${results.data.length} expense rows imported`);
@@ -298,8 +298,8 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
     uploadedExpenses.forEach((e) =>
       rows.push({
         Section: 'Uploaded Expense',
-        Name: e.Category || e.category || 'Uncategorized',
-        Category: e.Category || e.category || 'Uncategorized',
+        Name: e.Category || e.category || 'Uncategorised',
+        Category: e.Category || e.category || 'Uncategorised',
         Amount: e.Amount || e.amount || 0,
         Month: e.Date || e.date || '',
         Notes: '',
@@ -331,7 +331,7 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
     setUnusualExpenses([]);
     setDistributedExpenses([]);
     setUploadedExpenses([]);
-    showSnackbar('Backup downloaded — this period cleared for a fresh start', () => {
+    showSnackbar('Backup downloaded. This period is cleared for a fresh start', () => {
       setIncome(snapshot.income);
       setFixedMonthly(snapshot.fixedMonthly);
       setFixedAnnual(snapshot.fixedAnnual);
@@ -417,7 +417,7 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
         }
 
         const amount = Math.abs(parseFloat(expense.Amount || expense.amount || 0));
-        const category = expense.Category || expense.category || 'Uncategorized';
+        const category = expense.Category || expense.category || 'Uncategorised';
 
         byMonth[monthKey].total += amount;
         byMonth[monthKey].categories[category] = (byMonth[monthKey].categories[category] || 0) + amount;
@@ -500,7 +500,7 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
     variableMonthly.forEach((item) => add(item.category, parseFloat(item.amount) || 0));
     unusualExpenses.forEach((item) => add(item.category, parseFloat(item.amount) || 0));
     uploadedExpenses.forEach((expense) => {
-      const category = expense.Category || expense.category || 'Uncategorized';
+      const category = expense.Category || expense.category || 'Uncategorised';
       const amount = Math.abs(parseFloat(expense.Amount || expense.amount || 0));
       add(category, amount);
     });
@@ -562,7 +562,7 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
       bg: 'bg-[#FFF6E5]', text: 'text-[#5C4200]', Icon: AlertTriangle,
       message: "Less than 20% of this month's budget remains.",
     },
-    ok: { bg: 'bg-[#E7F6EC]', text: 'text-[#0D3D1D]', Icon: CheckCircle2, message: "You're on track — nice work protecting your runway." },
+    ok: { bg: 'bg-[#E7F6EC]', text: 'text-[#0D3D1D]', Icon: CheckCircle2, message: "You're on track. Nice work protecting your runway." },
   };
   const bannerInfo = STATUS_BANNER[monthStatus];
   const BannerIcon = bannerInfo.Icon;
@@ -571,15 +571,15 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
   const OVERALL_STATUS_BANNER = {
     over: {
       bg: 'bg-[#FDEDEA]', text: 'text-[#5C1A14]', Icon: AlertTriangle,
-      message: 'Projected to spend more than comes in over the full plan — worth a closer look.',
+      message: 'Projected to spend more than comes in over the full plan. Worth a closer look.',
     },
     caution: {
       bg: 'bg-[#FFF6E5]', text: 'text-[#5C4200]', Icon: AlertTriangle,
-      message: "You've committed most of your total funds — keep an eye on the months ahead.",
+      message: "You've committed most of your total funds. Keep an eye on the months ahead.",
     },
     ok: {
       bg: 'bg-[#E7F6EC]', text: 'text-[#0D3D1D]', Icon: CheckCircle2,
-      message: 'On track overall — the plan holds up well through Sep 2026.',
+      message: 'On track overall. The plan holds up well through Sep 2026.',
     },
   };
   const overallBannerInfo = OVERALL_STATUS_BANNER[overallStatus];
@@ -648,7 +648,7 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
                 <div>
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-sm font-medium text-[#46464F]">Monthly Budget</span>
-                    <span className="text-base font-semibold text-[#375DFB]"><Amount value={currentMonthBudget} /></span>
+                    <span className="text-base font-semibold text-[#3255E4]"><Amount value={currentMonthBudget} /></span>
                   </div>
                   <div className="mb-4 flex items-center justify-between">
                     <span className="text-sm font-medium text-[#46464F]">Planned Expenses</span>
@@ -899,7 +899,7 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
             >
               <div className="mb-5 flex items-center justify-between rounded-2xl bg-[#F5F2FA] px-4 py-3">
                 <span className="text-sm font-medium text-[#46464F]">Estimated monthly income</span>
-                <span className="text-lg font-semibold text-[#375DFB]"><Amount value={currentMonthBudget} digits={2} /></span>
+                <span className="text-lg font-semibold text-[#3255E4]"><Amount value={currentMonthBudget} digits={2} /></span>
               </div>
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
                 <NumberField
@@ -1012,7 +1012,7 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
                     dragActive ? 'border-[#375DFB] bg-[#EEF1FF]' : 'border-[#C6C6D0] bg-[#F5F2FA] hover:border-[#375DFB] hover:bg-[#EEF1FF]'
                   }`}
                 >
-                  <Upload className="text-[#375DFB]" size={26} />
+                  <Upload className="text-[#3255E4]" size={26} />
                   <span className="text-base font-medium text-[#1B1B21]">Drop a CSV here, or click to browse</span>
                   <span className="text-xs text-[#79747E]">Columns: Date, Amount, Category</span>
                   <input type="file" accept=".csv" onChange={handleCSVUpload} className="hidden" />
