@@ -365,6 +365,18 @@ on top of the separate-storage safety net.
   and 5.8:1 on the chosen colour). A lighter violet (`#6D4AC4`) was rejected because the
   small text on it measured only 3.9 to 4.2:1. Changing the colour again is a one-line edit.
 
+- **Step 15 (post-plan): cards appearing late while scrolling, 2026-10-03.** Nanda
+  reported that the chart view did not show all its content when scrolling. Cause
+  (reproduced in the browser pane, not in the headless test browser): the scroll-reveal
+  waited until 15% of a card was visible and then faded over 700ms, with the animated
+  background and glass blur running at the same time, so fast scrolling left blank gaps
+  where cards had not appeared yet. It also ignored the reduced-motion setting. Fix in
+  `src/hooks/useInView.js`: reveal cards just before they arrive (35% below the viewport),
+  reveal anything already above the fold on scroll so a dragged scrollbar cannot skip a
+  card, a 400ms fade, and no animation at all with reduced motion. Measured after jumping
+  straight to the bottom: every card visible in about 0.4s in both modes (previously a
+  few seconds); with reduced motion every card is visible at load.
+
 ## Confirmed sequencing
 
 1. ~~**Finish dark mode**~~ — done, see progress log.
