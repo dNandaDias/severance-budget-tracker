@@ -10,7 +10,12 @@ import { createPortal } from 'react-dom';
 // `position: fixed` descendants — without the portal this dialog's backdrop
 // gets trapped inside whichever card it was opened from instead of covering
 // the page.
-const ConfirmDialog = ({ open, title, message, confirmLabel, onConfirm, onCancel }) => {
+const CONFIRM_TONES = {
+  danger: 'bg-[#B3261E] hover:bg-[#961F18]',
+  primary: 'bg-[#3255E4] hover:bg-[#2A47C0]',
+};
+
+const ConfirmDialog = ({ open, title, message, confirmLabel, onConfirm, onCancel, tone = 'danger' }) => {
   if (!open) return null;
   return createPortal(
     <div
@@ -41,7 +46,7 @@ const ConfirmDialog = ({ open, title, message, confirmLabel, onConfirm, onCancel
           </button>
           <button
             onClick={onConfirm}
-            className="rounded-full bg-[#B3261E] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#961F18]"
+            className={`rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-colors ${CONFIRM_TONES[tone]}`}
           >
             {confirmLabel}
           </button>

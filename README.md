@@ -47,7 +47,7 @@ multi-file app in sync by hand stopped being worth it.)
 - **Currency selector** in the top bar of the first page (euro by default), shown as a compact
   pill such as `€ EUR`. It is a set-once choice that applies to both modes. It changes the
   symbol and number format everywhere, including the icons and the exports, but never
-  converts your amounts.
+  converts your amounts. If you already have data, changing it asks you to confirm first.
 - **Dark mode** and a **privacy-blur toggle** (for screen-sharing or screenshots),
   both real Material 3 treatments, not a quick inversion.
 

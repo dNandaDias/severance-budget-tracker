@@ -377,6 +377,32 @@ on top of the separate-storage safety net.
   straight to the bottom: every card visible in about 0.4s in both modes (previously a
   few seconds); with reduced motion every card is visible at load.
 
+- **Step 16 (post-plan): confirm before changing currency when data exists, 2026-10-03.**
+  Nanda's idea: if someone already has data and changes currency on the first page, show an
+  info dialog that the numbers are not converted. Built as `ConfirmDialog` with a new neutral
+  `tone="primary"` (blue "Change" button; the default stays red for destructive actions) and
+  `lib/savedData.js` (`hasSavedData`: true when either mode holds amounts; a mode cleared with
+  "Start a new period" does not count). The dialog opens before anything changes, so Cancel
+  leaves the pill and the stored currency untouched. Copy: "Your amounts stay exactly as they
+  are. Nothing is converted, so 1,000 EUR becomes 1,000 USD." Tested: with data, after Cancel,
+  after Change, after clearing a period, and in a fresh browser (no dialog in the last two).
+  Demo data counts as data once a mode has been visited, which is acceptable.
+  **Known risks and future solutions** (data lives only in the user's browser):
+  1. The dialog only explains at the moment of the change. Later, nothing in the app says the
+     numbers were entered in another currency, and exports record the currency at export time,
+     so a backup made after switching labels old euro amounts as dollars.
+  2. A period can end up mixing currencies, and totals and charts then add unlike amounts.
+  3. There is no way to restore a JSON backup in the app (CSV import only covers expenses), so
+     a mistake cannot be recovered from a backup file. Not converting is the safe default for
+     this reason: switching back loses nothing, whereas a conversion would rewrite stored
+     numbers and could not be undone without a backup.
+  4. Each browser and device keeps its own currency and data, so two devices can disagree.
+  5. CSV import ignores any currency column, so importing another currency's file mislabels it.
+  Possible future solutions, cheapest first: store a currency history (previous currency and
+  date) and include it in exports; set the currency per period when starting a new period;
+  a JSON restore; a "convert at this rate" step inside "Start a new period" with an automatic
+  backup first; per-entry currency (a larger data-model change).
+
 ## Confirmed sequencing
 
 1. ~~**Finish dark mode**~~ — done, see progress log.

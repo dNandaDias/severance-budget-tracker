@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import { Wallet2, PiggyBank, ArrowRight, ChevronDown } from 'lucide-react';
 import ThemeStyles from './ThemeStyles';
+import ConfirmDialog from './ConfirmDialog';
+import { hasSavedData } from '../lib/savedData';
 import { useCurrency } from './CurrencyContext';
 import { CURRENCIES, currencyLabel } from '../lib/currencies';
 
@@ -25,6 +28,15 @@ const MODES = [
 
 const ModePicker = ({ onSelect }) => {
   const { currency, setCurrency } = useCurrency();
+  const [pendingCurrency, setPendingCurrency] = useState(null);
+
+  // Amounts are never converted, so with saved data the switch is confirmed first.
+  const requestCurrency = (next) => {
+    if (next === currency) return;
+    if (hasSavedData()) setPendingCurrency(next);
+    else setCurrency(next);
+  };
+
   return (
   <div className="min-h-screen text-[#1B1B21]">
     <ThemeStyles />
@@ -39,7 +51,7 @@ const ModePicker = ({ onSelect }) => {
           <span className="sr-only">Currency</span>
           <select
             value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
+            onChange={(e) => requestCurrency(e.target.value)}
             title="Currency"
             className="h-9 cursor-pointer appearance-none rounded-full bg-white/10 pl-3.5 pr-8 text-sm font-medium text-white transition-colors hover:bg-white/20"
           >
@@ -83,6 +95,19 @@ const ModePicker = ({ onSelect }) => {
         Each mode keeps its own separate data: switching later never overwrites the other.
       </p>
     </div>
+
+    <ConfirmDialog
+      open={pendingCurrency !== null}
+      title="Change currency?"
+      message={`Your amounts stay exactly as they are. Nothing is converted, so 1,000 ${currency} becomes 1,000 ${pendingCurrency}.`}
+      confirmLabel="Change"
+      tone="primary"
+      onCancel={() => setPendingCurrency(null)}
+      onConfirm={() => {
+        setCurrency(pendingCurrency);
+        setPendingCurrency(null);
+      }}
+    />
   </div>
   );
 };
