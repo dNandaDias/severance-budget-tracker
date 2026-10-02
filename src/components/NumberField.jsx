@@ -1,13 +1,15 @@
 import { useContext } from 'react';
+import { useCurrency } from './CurrencyContext';
 import { PrivacyContext } from './PrivacyContext';
 
 const NumberField = ({ label, value, onChange, help, min }) => {
   const hide = useContext(PrivacyContext);
+  const { symbol } = useCurrency();
   return (
     <div>
       <label className="mb-1.5 block text-sm font-medium text-[#46464F]">{label}</label>
       <div className="flex items-center rounded-2xl border border-[#C6C6D0] bg-white px-4 py-3 transition-colors focus-within:border-[#375DFB] focus-within:ring-2 focus-within:ring-[#375DFB]/15">
-        <span className="mr-2 text-[#79747E]">€</span>
+        <span className="mr-2 text-[#645F6C]">{symbol}</span>
         <input
           type="number"
           min={min}
@@ -18,7 +20,7 @@ const NumberField = ({ label, value, onChange, help, min }) => {
           }`}
         />
       </div>
-      {help ? <p className="mt-1.5 text-xs text-[#79747E]">{help}</p> : null}
+      {help ? <p className="mt-1.5 text-xs text-[#645F6C]">{help}</p> : null}
     </div>
   );
 };

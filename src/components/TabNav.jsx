@@ -1,7 +1,7 @@
-import { EyeIcon, EyeOffIcon } from './icons';
+import { CurrencyIcon } from './CurrencyContext';
 
 const TabNav = ({ tabs, activeTab, setActiveTab, hideAmounts, setHideAmounts }) => (
-  <div className="border-b border-black/5 bg-white">
+  <div className="glass-bar">
     <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
       <div className="inline-flex rounded-full bg-[#F5F2FA] p-1">
         {tabs.map((tab) => (
@@ -23,8 +23,8 @@ const TabNav = ({ tabs, activeTab, setActiveTab, hideAmounts, setHideAmounts }) 
         title={hideAmounts ? 'Show amounts' : 'Hide amounts'}
         aria-label={hideAmounts ? 'Show amounts' : 'Hide amounts'}
       >
-        {hideAmounts ? <EyeOffIcon size={17} /> : <EyeIcon size={17} />}
         {hideAmounts ? 'Show' : 'Hide'}
+        <CurrencyIcon size={18} strokeWidth={2.25} aria-hidden="true" />
       </button>
     </div>
   </div>

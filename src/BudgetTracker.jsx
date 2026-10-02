@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
-  Upload, TrendingUp, DollarSign, Wallet2,
+  Upload, TrendingUp, Wallet2,
   BarChart3, CheckCircle2, AlertTriangle,
   Wallet, Repeat, CalendarDays, ShoppingBag,
   Layers,
@@ -10,10 +10,10 @@ import {
 } from 'recharts';
 import Papa from 'papaparse';
 
-import { fmtEUR } from './lib/format';
 import { DEFAULT_CATEGORIES, withCategoryFallback } from './lib/categories';
 import { tooltipStyle, COLORS } from './lib/chartTheme';
 import { useCountUp } from './hooks/useCountUp';
+import { useCurrency, CurrencyIcon } from './components/CurrencyContext';
 import { PrivacyContext, Amount } from './components/PrivacyContext';
 import ThemeStyles from './components/ThemeStyles';
 import AppHeader from './components/AppHeader';
@@ -39,6 +39,7 @@ const buildMonths = () => {
 };
 
 const BudgetTracker = ({ onSwitchMode }) => {
+  const { currency, formatMoney } = useCurrency();
   const months = useMemo(buildMonths, []);
   const [activeTab, setActiveTab] = useState('dashboard');
 
@@ -240,6 +241,7 @@ const BudgetTracker = ({ onSwitchMode }) => {
     const data = {
       income, fixedMonthly, fixedAnnual, variableMonthly,
       unusualExpenses, distributedExpenses, uploadedExpenses,
+      currency,
       exportedAt: new Date().toISOString(),
     };
     downloadBlob(
@@ -279,6 +281,7 @@ const BudgetTracker = ({ onSwitchMode }) => {
       })
     );
 
+    rows.forEach((row) => { row.Currency = currency; });
     downloadBlob(
       Papa.unparse(rows),
       `budget-tracker-${new Date().toISOString().slice(0, 10)}.csv`,
@@ -452,12 +455,11 @@ const BudgetTracker = ({ onSwitchMode }) => {
 
   return (
     <PrivacyContext.Provider value={hideAmounts}>
-    <div className="min-h-screen bg-[#F7F7FB] text-[#1B1B21] bg-texture">
+    <div className="min-h-screen text-[#1B1B21]">
       <ThemeStyles />
 
       <AppHeader
         icon={Wallet2}
-        iconBg="#132A1D"
         title="Budget Tracker"
         subtitle="Everyday income & expenses"
         darkMode={darkMode}
@@ -482,7 +484,7 @@ const BudgetTracker = ({ onSwitchMode }) => {
           <div key="dashboard" className="animate-fadein space-y-6">
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
               <StatCard
-                icon={DollarSign}
+                icon={CurrencyIcon}
                 label="Monthly Income"
                 value={<Amount value={heroIncome} />}
                 tone="primary"
@@ -550,14 +552,14 @@ const BudgetTracker = ({ onSwitchMode }) => {
                           <Cell fill={expenseColor} />
                         </Pie>
                         <Tooltip
-                          formatter={(value) => (hideAmounts ? '•••••' : fmtEUR(value))}
+                          formatter={(value) => (hideAmounts ? '•••••' : formatMoney(value))}
                           contentStyle={tooltipStyle}
                           position={{ y: 175 }}
                         />
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-sm text-[#79747E]">Budget Usage</span>
+                      <span className="text-sm text-[#645F6C]">Budget Usage</span>
                       <span className="text-2xl font-bold text-[#1B1B21]">
                         {monthlyIncomeTotal > 0 ? ((currentMonthExpenses / monthlyIncomeTotal) * 100).toFixed(0) : 0}%
                       </span>
@@ -593,7 +595,7 @@ const BudgetTracker = ({ onSwitchMode }) => {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => (hideAmounts ? '•••••' : fmtEUR(value))} contentStyle={tooltipStyle} />
+                      <Tooltip formatter={(value) => (hideAmounts ? '•••••' : formatMoney(value))} contentStyle={tooltipStyle} />
                     </PieChart>
                   </ResponsiveContainer>
                 </ExpandingChart>
@@ -621,7 +623,7 @@ const BudgetTracker = ({ onSwitchMode }) => {
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(value) => (hideAmounts ? '•••••' : fmtEUR(value))}
+                      formatter={(value) => (hideAmounts ? '•••••' : formatMoney(value))}
                       contentStyle={tooltipStyle}
                     />
                     <Legend />
@@ -726,7 +728,7 @@ const BudgetTracker = ({ onSwitchMode }) => {
                 >
                   <Upload className="text-[#3255E4]" size={26} />
                   <span className="text-base font-medium text-[#1B1B21]">Drop a CSV here, or click to browse</span>
-                  <span className="text-xs text-[#79747E]">Columns: Date, Amount, Category</span>
+                  <span className="text-xs text-[#645F6C]">Columns: Date, Amount, Category</span>
                   <input type="file" accept=".csv" onChange={handleCSVUpload} className="hidden" />
                 </label>
                 {uploadedExpenses.length > 0 && (

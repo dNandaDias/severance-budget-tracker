@@ -1,5 +1,7 @@
-import { Wallet2, PiggyBank, ArrowRight } from 'lucide-react';
+import { Wallet2, PiggyBank, ArrowRight, ChevronDown } from 'lucide-react';
 import ThemeStyles from './ThemeStyles';
+import { useCurrency } from './CurrencyContext';
+import { CURRENCIES, currencyLabel } from '../lib/currencies';
 
 const MODES = [
   {
@@ -21,14 +23,34 @@ const MODES = [
   },
 ];
 
-const ModePicker = ({ onSelect }) => (
-  <div className="min-h-screen bg-[#F7F7FB] text-[#1B1B21] bg-texture">
+const ModePicker = ({ onSelect }) => {
+  const { currency, setCurrency } = useCurrency();
+  return (
+  <div className="min-h-screen text-[#1B1B21]">
     <ThemeStyles />
 
-    <div className="bg-[#2A1B3D] text-white">
-      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Budget Tracker</h1>
-        <p className="mt-1 text-sm text-white/60">Choose how you want to track your money</p>
+    <div className="bg-[color:var(--app-bar)] text-white">
+      <div className="mx-auto flex max-w-5xl flex-wrap items-start justify-between gap-4 px-4 py-10 sm:px-6">
+        <div>
+          <h1 className="text-[2.1rem] font-semibold leading-tight tracking-tight sm:text-[2.7rem]">Budget Tracker</h1>
+          <p className="mt-1 text-sm text-white/75">Choose how you want to track your money</p>
+        </div>
+        <label className="relative mt-1.5">
+          <span className="sr-only">Currency</span>
+          <select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            title="Currency"
+            className="h-9 cursor-pointer appearance-none rounded-full bg-white/10 pl-3.5 pr-8 text-sm font-medium text-white transition-colors hover:bg-white/20"
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c.code} value={c.code} style={{ color: '#1B1B21', background: '#FFFFFF' }}>
+                {currencyLabel(c.code)}
+              </option>
+            ))}
+          </select>
+          <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
+        </label>
       </div>
     </div>
 
@@ -38,7 +60,7 @@ const ModePicker = ({ onSelect }) => (
           <button
             key={mode.id}
             onClick={() => onSelect(mode.id)}
-            className="group flex flex-col overflow-hidden rounded-[28px] border border-black/5 bg-white text-left shadow-sm transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] hover:-translate-y-1 hover:shadow-xl"
+            className="group flex flex-col glass-card overflow-hidden rounded-[28px] text-left shadow-sm transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] hover:-translate-y-1 hover:shadow-xl"
           >
             <div className="flex h-32 items-center justify-center" style={{ background: mode.fill }}>
               <mode.icon size={40} style={{ color: mode.fillText || '#FFFFFF' }} />
@@ -57,11 +79,12 @@ const ModePicker = ({ onSelect }) => (
         ))}
       </div>
 
-      <p className="mt-8 text-center text-sm text-[#79747E]">
+      <p className="mt-8 text-center text-sm text-[#46464F]">
         Each mode keeps its own separate data: switching later never overwrites the other.
       </p>
     </div>
   </div>
-);
+  );
+};
 
 export default ModePicker;

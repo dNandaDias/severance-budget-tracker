@@ -1,12 +1,14 @@
 import { useContext, useState } from 'react';
 import { CheckCircle2, ChevronDown, ChevronUp, Edit2, Layers, Plus, Trash2 } from 'lucide-react';
 import SectionCard from './SectionCard';
+import { useCurrency } from './CurrencyContext';
 import { PrivacyContext, Amount } from './PrivacyContext';
 
 const DistributedExpensesSection = ({
   items, setItems, editingExpense, setEditingExpense, updateItem, onAdd, onRemove, months, delay,
 }) => {
   const hide = useContext(PrivacyContext);
+  const { symbol, formatMoney } = useCurrency();
   const [open, setOpen] = useState(items.length > 0);
   return (
     <SectionCard
@@ -22,14 +24,14 @@ const DistributedExpensesSection = ({
         </button>
       }
     >
-      <p className="mb-4 text-sm text-[#79747E]">
-        A big cost split evenly across several months, like €3,000 of dental work spread over 6 months.
+      <p className="mb-4 text-sm text-[#645F6C]">
+        A big cost split evenly across several months, like {formatMoney(3000)} of dental work spread over 6 months.
       </p>
       {open && (
         <>
           <div className="space-y-2">
             {items.length === 0 && (
-              <p className="rounded-2xl bg-[#F5F2FA] px-4 py-6 text-center text-sm text-[#79747E]">
+              <p className="rounded-2xl bg-[#F5F2FA] px-4 py-6 text-center text-sm text-[#645F6C]">
                 No spread-out expenses yet.
               </p>
             )}
@@ -52,7 +54,7 @@ const DistributedExpensesSection = ({
                         className="min-w-[9rem] flex-1 rounded-xl border border-[#C6C6D0] bg-white px-3 py-2 text-sm outline-none focus:border-[#375DFB]"
                       />
                       <div className="flex items-center rounded-xl border border-[#C6C6D0] bg-white px-2 py-2">
-                        <span className="mr-1 text-xs text-[#79747E]">€</span>
+                        <span className="mr-1 text-xs text-[#645F6C]">{symbol}</span>
                         <input
                           type="number"
                           value={item.totalAmount}
@@ -68,7 +70,7 @@ const DistributedExpensesSection = ({
                           onChange={(e) => updateItem(items, setItems, item.id, 'months', parseFloat(e.target.value) || 1)}
                           className="w-12 bg-transparent text-right text-sm outline-none"
                         />
-                        <span className="text-xs text-[#79747E]">mo</span>
+                        <span className="text-xs text-[#645F6C]">mo</span>
                       </div>
                       <select
                         value={item.startMonth}
@@ -98,14 +100,14 @@ const DistributedExpensesSection = ({
                       <span className="text-sm font-semibold text-[#1B1B21]"><Amount value={item.monthlyAmount} digits={2} />/mo</span>
                       <button
                         onClick={() => setEditingExpense({ type: 'distributed', id: item.id })}
-                        className="rounded-full p-2 text-[#79747E] transition-colors hover:bg-[#E3E8FF] hover:text-[#3255E4]"
+                        className="rounded-full p-2 text-[#645F6C] transition-colors hover:bg-[#E3E8FF] hover:text-[#3255E4]"
                         title="Edit"
                       >
                         <Edit2 size={15} />
                       </button>
                       <button
                         onClick={() => onRemove(items, setItems, item.id, item.name)}
-                        className="rounded-full p-2 text-[#79747E] transition-colors hover:bg-[#FDEDEA] hover:text-[#B3261E]"
+                        className="rounded-full p-2 text-[#645F6C] transition-colors hover:bg-[#FDEDEA] hover:text-[#B3261E]"
                         title="Delete"
                       >
                         <Trash2 size={15} />

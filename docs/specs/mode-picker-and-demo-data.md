@@ -293,6 +293,78 @@ on top of the separate-storage safety net.
   to `README.md`.
   **Live at: https://dnandadias.github.io/severance-budget-tracker/**
 
+- **Step 11 (post-plan polish): ambient background, 2026-10-02.** Requested by
+  Nanda after the plan closed: a notebook-paper background with light square
+  lines, squares that appear and disappear, and a slowly moving gradient.
+  Built as `src/components/AmbientBackground.jsx`, one fixed full-screen WebGL
+  fragment shader (no new dependencies) rendered once in `App.jsx` behind every
+  screen. The gradient is two sine fields warping each other; each grid cell
+  has its own slow sine wave and only the top of the wave lights the square.
+  The three page wrappers lost their flat `bg-[#F7F7FB]` and dot texture;
+  `ThemeStyles.jsx` now carries a static CSS gradient on `<body>` as the
+  fallback. Guard rails: `prefers-reduced-motion` renders one still frame
+  (checked: identical across frames), 30 fps cap, paused in background tabs,
+  WebGL-unavailable falls back to the CSS gradient. Text sitting directly on
+  the gradient (mode-picker footer, now `#46464F` in light mode) measured 7.1:1
+  light and 9.1:1 dark against the worst rendered background pixel. Cards stay
+  opaque, so data legibility is unchanged. Before/after screenshots (light and
+  dark, mode picker and severance dashboard) are on the FigJam board.
+  Iteration after Nanda's feedback (same day): squares smaller, grid made
+  uneven and worn (broken segments that fade on their own, grain, dust, a rare
+  sideways glitch band that is off in reduced-motion mode). Cards and the tab
+  bar became glass (`.glass-card` / `.glass-bar` in `ThemeStyles.jsx`, with an
+  opaque fallback). Secondary text darkened from `#79747E` to `#645F6C` so it
+  holds on glass. Titles about 40 to 47% bigger; the header icon is now an
+  outline aligned to the top of the title. Light palette chosen from five
+  options: "Aurora" (lilac `#CDBEF5`, sky `#A9CBFF`, mint `#9FE5CF`). Dark mode
+  is a dim northern-lights gradient (purple, blue, green curtains over a deep
+  base). Footer text on the background measured 5.4:1 light and 6.1:1 dark.
+  Open decision for Nanda: the design review pointed out WCAG 2.2.2 (Pause,
+  Stop, Hide), which asks for an on-screen pause control for automatic motion
+  lasting over 5 seconds. The OS reduce-motion setting is respected, but there
+  is no visible pause button yet. Recommended: a small persisted "Pause
+  background" toggle in the header. Not built until she decides (design-principles
+  section 8).
+
+- **Step 12 (post-plan): Hide button label, 2026-10-03.** The privacy toggle now
+  reads "Hide" / "Show" followed by a money icon, instead of an eye, because the eye
+  did not say what was being hidden. First tried lucide `Coins` (too small to
+  recognise), then compared five icons at real size and chose the euro sign.
+- **Step 13 (post-plan): currency selector, 2026-10-03.** Nanda wanted users outside
+  the eurozone to be able to use the app. Euro was hardcoded in one formatter
+  (`fmtEUR`), four input prefixes, one help-text example and the `$` icons on the
+  stat cards, so this was small. New `lib/currencies.js` (13 currencies, each with a
+  lucide icon or a banknote fallback), `lib/format.js` `fmtMoney`, and
+  `CurrencyContext.jsx` (provider, `useCurrency`, `CurrencyIcon`). The choice is a
+  shared preference (`budgetTracker_currency`, default EUR). It first lived in the tracker
+  header with a snackbar and undo, then moved to the first page, first centred under the
+  mode cards and then, because Nanda judged the centred block poor design and the
+  explanation unnecessary, into the top app bar of the first page as a compact pill
+  (`€ EUR`) with no explanatory text. The reason for the first move still stands: a
+  tracker-header dropdown invites switching mid-use, when the numbers stay the same
+  and confuse. Decisions: it changes display only and never converts
+  amounts (a rate lookup would need a network call and break the "nothing leaves your
+  device" promise, and "Start a new period" already covers moving country or job), the
+  control carries only a "Currency" tooltip and screen-reader label, and CSV and JSON
+  exports record the currency. The
+  Hide button and Monthly Income icons follow the chosen currency, so no separate
+  neutral icon was needed. While it lived in the header it made the header overflow by 18px at 390px wide; the
+  action group now wraps, and the selector no longer sits there.
+
+- **Step 14 (post-plan): top bar colour per theme, 2026-10-03.** Nanda wanted the dark
+  purple bar kept for dark mode only, with a different colour in light mode. The bar is
+  now one CSS variable, `--app-bar` (in `ThemeStyles.jsx`): deep violet `#4527A0` in light
+  mode, near-black purple `#2A1B3D` in dark mode. Colour options were compared on the real
+  page. First round: purple, forest green `#0D4338`, ocean teal `#0C4150` and indigo
+  `#1F2B6B`; forest green was applied but Nanda did not like it. Second round, because
+  purple carries a meaning of transformation in some cultures and suits a tracker built
+  around a career transition: deep violet `#4527A0` (chosen), amethyst `#5E35B1`, royal
+  purple `#5B2DBA` and plum `#6A1B9A`. Deep violet stays clearly darker than the bright
+  violet on the Monthly Expenses card, so the bar and the cards do not blur together. The
+  subtitle and "Saved" text on the bar went from 60% and 50% white to 75% and 70% (6.4:1
+  and 5.8:1 on the chosen colour). A lighter violet (`#6D4AC4`) was rejected because the
+  small text on it measured only 3.9 to 4.2:1. Changing the colour again is a one-line edit.
+
 ## Confirmed sequencing
 
 1. ~~**Finish dark mode**~~ — done, see progress log.

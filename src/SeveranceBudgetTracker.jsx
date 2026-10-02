@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
-  Upload, TrendingUp, DollarSign, Calendar,
+  Upload, TrendingUp, Calendar,
   BarChart3, CheckCircle2, AlertTriangle,
   PiggyBank, Wallet, Repeat, CalendarDays, ShoppingBag,
   Layers,
@@ -11,10 +11,10 @@ import {
 } from 'recharts';
 import Papa from 'papaparse';
 
-import { fmtEUR } from './lib/format';
 import { DEFAULT_CATEGORIES, withCategoryFallback } from './lib/categories';
 import { tooltipStyle, COLORS } from './lib/chartTheme';
 import { useCountUp } from './hooks/useCountUp';
+import { useCurrency, CurrencyIcon } from './components/CurrencyContext';
 import { PrivacyContext, Amount, ChartTooltip } from './components/PrivacyContext';
 import ThemeStyles from './components/ThemeStyles';
 import AppHeader from './components/AppHeader';
@@ -40,6 +40,7 @@ const EMPTY_INCOME = {
 };
 
 const SeveranceBudgetTracker = ({ onSwitchMode }) => {
+  const { currency, formatMoney } = useCurrency();
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const [income, setIncome] = useState(() => {
@@ -262,6 +263,7 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
     const data = {
       income, fixedMonthly, fixedAnnual, variableMonthly,
       unusualExpenses, distributedExpenses, uploadedExpenses,
+      currency,
       exportedAt: new Date().toISOString(),
     };
     downloadBlob(
@@ -306,6 +308,7 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
       })
     );
 
+    rows.forEach((row) => { row.Currency = currency; });
     downloadBlob(
       Papa.unparse(rows),
       `budget-safety-net-${new Date().toISOString().slice(0, 10)}.csv`,
@@ -587,12 +590,11 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
 
   return (
     <PrivacyContext.Provider value={hideAmounts}>
-    <div className="min-h-screen bg-[#F7F7FB] text-[#1B1B21] bg-texture">
+    <div className="min-h-screen text-[#1B1B21]">
       <ThemeStyles />
 
       <AppHeader
         icon={PiggyBank}
-        iconBg="#132A1D"
         title="Budget Safety Net"
         subtitle="Sep 2025 – Sep 2026 · career transition runway"
         darkMode={darkMode}
@@ -617,7 +619,7 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
           <div key="dashboard" className="animate-fadein space-y-6">
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
               <StatCard
-                icon={DollarSign}
+                icon={CurrencyIcon}
                 label="Available Severance"
                 value={<Amount value={heroSeverance} />}
                 tone="success"
@@ -686,14 +688,14 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
                           <Cell fill={expenseColor} />
                         </Pie>
                         <Tooltip
-                          formatter={(value) => (hideAmounts ? '•••••' : fmtEUR(value))}
+                          formatter={(value) => (hideAmounts ? '•••••' : formatMoney(value))}
                           contentStyle={tooltipStyle}
                           position={{ y: 175 }}
                         />
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-sm text-[#79747E]">Budget Usage</span>
+                      <span className="text-sm text-[#645F6C]">Budget Usage</span>
                       <span className="text-2xl font-bold text-[#1B1B21]">
                         {((currentMonthActualExpenses / currentMonthBudget) * 100).toFixed(0)}%
                       </span>
@@ -751,14 +753,14 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
                           <Cell fill={expenseColor} />
                         </Pie>
                         <Tooltip
-                          formatter={(value) => (hideAmounts ? '•••••' : fmtEUR(value))}
+                          formatter={(value) => (hideAmounts ? '•••••' : formatMoney(value))}
                           contentStyle={tooltipStyle}
                           position={{ y: 175 }}
                         />
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-sm text-[#79747E]">Overall Usage</span>
+                      <span className="text-sm text-[#645F6C]">Overall Usage</span>
                       <span className="text-2xl font-bold text-[#1B1B21]">{overallUsagePercent.toFixed(0)}%</span>
                     </div>
                   </div>
@@ -793,7 +795,7 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => (hideAmounts ? '•••••' : fmtEUR(value))} contentStyle={tooltipStyle} />
+                      <Tooltip formatter={(value) => (hideAmounts ? '•••••' : formatMoney(value))} contentStyle={tooltipStyle} />
                     </PieChart>
                   </ResponsiveContainer>
                 </ExpandingChart>
@@ -854,7 +856,7 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(value) => (hideAmounts ? '•••••' : fmtEUR(value))}
+                      formatter={(value) => (hideAmounts ? '•••••' : formatMoney(value))}
                       contentStyle={tooltipStyle}
                     />
                     <Legend />
@@ -878,7 +880,7 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
                       axisLine={{ stroke: '#E1E1EA' }}
                     />
                     <YAxis tick={{ fill: '#46464F', fontSize: 12 }} axisLine={{ stroke: '#E1E1EA' }} />
-                    <Tooltip formatter={(value) => (hideAmounts ? '•••••' : fmtEUR(value))} contentStyle={tooltipStyle} />
+                    <Tooltip formatter={(value) => (hideAmounts ? '•••••' : formatMoney(value))} contentStyle={tooltipStyle} />
                     <Legend />
                     <Line type="natural" dataKey="income" stroke={incomeColor} strokeWidth={2} strokeLinecap="round" name="Monthly Income" dot={false} />
                     <Line type="natural" dataKey="totalExpenses" stroke={expenseColor} strokeWidth={2} strokeLinecap="round" name="Total Expenses" dot={false} />
@@ -1014,7 +1016,7 @@ const SeveranceBudgetTracker = ({ onSwitchMode }) => {
                 >
                   <Upload className="text-[#3255E4]" size={26} />
                   <span className="text-base font-medium text-[#1B1B21]">Drop a CSV here, or click to browse</span>
-                  <span className="text-xs text-[#79747E]">Columns: Date, Amount, Category</span>
+                  <span className="text-xs text-[#645F6C]">Columns: Date, Amount, Category</span>
                   <input type="file" accept=".csv" onChange={handleCSVUpload} className="hidden" />
                 </label>
                 {uploadedExpenses.length > 0 && (

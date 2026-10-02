@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import AmbientBackground from './components/AmbientBackground';
+import { CurrencyProvider } from './components/CurrencyContext';
 import ModePicker from './components/ModePicker';
 import BudgetTracker from './BudgetTracker';
 import SeveranceBudgetTracker from './SeveranceBudgetTracker';
@@ -16,9 +18,21 @@ const App = () => {
 
   const switchMode = () => setMode(null);
 
-  if (mode === 'generic') return <BudgetTracker onSwitchMode={switchMode} />;
-  if (mode === 'severance') return <SeveranceBudgetTracker onSwitchMode={switchMode} />;
-  return <ModePicker onSelect={selectMode} />;
+  // The picker has no theme toggle of its own, so it must honour the saved choice on load.
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', localStorage.getItem('budgetTracker_darkMode') === 'true');
+  }, []);
+
+  let screen = <ModePicker onSelect={selectMode} />;
+  if (mode === 'generic') screen = <BudgetTracker onSwitchMode={switchMode} />;
+  if (mode === 'severance') screen = <SeveranceBudgetTracker onSwitchMode={switchMode} />;
+
+  return (
+    <CurrencyProvider>
+      <AmbientBackground />
+      {screen}
+    </CurrencyProvider>
+  );
 };
 
 export default App;

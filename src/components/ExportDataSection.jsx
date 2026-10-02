@@ -11,7 +11,7 @@ const ExportDataSection = ({ onExportCSV, onExportJSON, onStartFresh, delay = 0 
 
   return (
     <SectionCard title="Export Data" icon={Download} delay={delay}>
-      <p className="mb-4 text-sm text-[#79747E]">
+      <p className="mb-4 text-sm text-[#645F6C]">
         Download everything you've entered (income, expenses, and uploads) as a spreadsheet-friendly
         CSV or a raw JSON backup.
       </p>
@@ -31,7 +31,7 @@ const ExportDataSection = ({ onExportCSV, onExportJSON, onStartFresh, delay = 0 
       </div>
 
       <div className="mt-6 border-t border-black/5 pt-5">
-        <p className="mb-3 text-sm text-[#79747E]">
+        <p className="mb-3 text-sm text-[#645F6C]">
           Finished this period, e.g. a severance runway ending or a new job starting? Download a full
           backup, then clear this data for a fresh start. The other mode is never affected.
         </p>

@@ -2,6 +2,7 @@ import { useContext } from 'react';
 import { CheckCircle2, Edit2, Plus, Sparkles, Trash2 } from 'lucide-react';
 import SectionCard from './SectionCard';
 import CategorySelect from './CategorySelect';
+import { useCurrency } from './CurrencyContext';
 import { PrivacyContext, Amount } from './PrivacyContext';
 
 const UnusualExpensesSection = ({
@@ -9,6 +10,7 @@ const UnusualExpensesSection = ({
   categories, onAddCategory,
 }) => {
   const hide = useContext(PrivacyContext);
+  const { symbol } = useCurrency();
   return (
   <SectionCard
     title="One-off Expenses"
@@ -18,12 +20,12 @@ const UnusualExpensesSection = ({
       <span className="rounded-full bg-[#EFECF4] px-3 py-1 text-sm font-semibold text-[#3255E4]"><Amount value={total} /></span>
     }
   >
-    <p className="mb-4 text-sm text-[#79747E]">
+    <p className="mb-4 text-sm text-[#645F6C]">
       Large, irregular costs that hit a single month: a deposit, a big trip, a new laptop.
     </p>
     <div className="space-y-2">
       {items.length === 0 && (
-        <p className="rounded-2xl bg-[#F5F2FA] px-4 py-6 text-center text-sm text-[#79747E]">No one-off expenses yet.</p>
+        <p className="rounded-2xl bg-[#F5F2FA] px-4 py-6 text-center text-sm text-[#645F6C]">No one-off expenses yet.</p>
       )}
       {items.map((item) => {
         const isEditing = editingExpense.type === 'unusual' && editingExpense.id === item.id;
@@ -59,7 +61,7 @@ const UnusualExpensesSection = ({
                   onAddCategory={onAddCategory}
                 />
                 <div className="flex items-center rounded-xl border border-[#C6C6D0] bg-white px-2 py-2">
-                  <span className="mr-1 text-xs text-[#79747E]">€</span>
+                  <span className="mr-1 text-xs text-[#645F6C]">{symbol}</span>
                   <input
                     type="number"
                     value={item.amount}
@@ -87,14 +89,14 @@ const UnusualExpensesSection = ({
                 <span className="text-sm font-semibold text-[#1B1B21]"><Amount value={item.amount} /></span>
                 <button
                   onClick={() => setEditingExpense({ type: 'unusual', id: item.id })}
-                  className="rounded-full p-2 text-[#79747E] transition-colors hover:bg-[#E3E8FF] hover:text-[#3255E4]"
+                  className="rounded-full p-2 text-[#645F6C] transition-colors hover:bg-[#E3E8FF] hover:text-[#3255E4]"
                   title="Edit"
                 >
                   <Edit2 size={15} />
                 </button>
                 <button
                   onClick={() => onRemove(items, setItems, item.id, item.name)}
-                  className="rounded-full p-2 text-[#79747E] transition-colors hover:bg-[#FDEDEA] hover:text-[#B3261E]"
+                  className="rounded-full p-2 text-[#645F6C] transition-colors hover:bg-[#FDEDEA] hover:text-[#B3261E]"
                   title="Delete"
                 >
                   <Trash2 size={15} />

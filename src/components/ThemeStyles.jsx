@@ -17,24 +17,35 @@ const ThemeStyles = () => (
       --md-on-surface: #1B1B21;
       --md-on-surface-var: #46464F;
       --md-outline: #79747E;
+      --app-bar: #4527A0;
     }
     html.dark {
       --md-surface: #121016;
       --md-on-surface: #F0F0F5;
       --md-on-surface-var: #C7C7D1;
       --md-outline: #9C97A3;
+      --app-bar: #2A1B3D;
     }
 
-    .bg-texture {
-      background-image: radial-gradient(circle at 1px 1px, rgba(27,27,33,0.05) 1px, transparent 0);
-      background-size: 22px 22px;
-    }
-    html.dark .bg-texture {
-      background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0);
-    }
+    /* Static fallback under the animated AmbientBackground (no WebGL, or before it paints). */
+    body { background: linear-gradient(135deg, #CDBEF5 0%, #8AC9D8 55%, #9FE5CF 100%) fixed; }
+    html.dark body { background: radial-gradient(70% 55% at 20% 70%, rgba(10, 92, 62, 0.6), transparent 70%), radial-gradient(55% 45% at 85% 10%, rgba(28, 74, 168, 0.45), transparent 70%), radial-gradient(40% 35% at 90% 95%, rgba(92, 44, 150, 0.4), transparent 70%), #0A0C16 fixed; }
 
-    html.dark body { background: #121016; }
-    html.dark [class*="bg-[#F7F7FB]"] { background-color: #121016 !important; }
+    /* Glass surfaces: translucent, blurred, with a light edge. Opaque fallback if backdrop-filter is missing. */
+    .glass-card, .glass-bar {
+      background-color: rgba(255, 255, 255, 0.62);
+      -webkit-backdrop-filter: blur(16px) saturate(1.5);
+      backdrop-filter: blur(16px) saturate(1.5);
+    }
+    .glass-card { border: 1px solid rgba(255, 255, 255, 0.7); }
+    .glass-bar { border-bottom: 1px solid rgba(255, 255, 255, 0.7); }
+    html.dark .glass-card, html.dark .glass-bar { background-color: rgba(28, 26, 36, 0.62); }
+    html.dark .glass-card { border-color: rgba(255, 255, 255, 0.09); }
+    html.dark .glass-bar { border-bottom-color: rgba(255, 255, 255, 0.09); }
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      .glass-card, .glass-bar { background-color: rgba(255, 255, 255, 0.94); }
+      html.dark .glass-card, html.dark .glass-bar { background-color: rgba(28, 26, 36, 0.96); }
+    }
     html.dark [class*="bg-white"] { background-color: #1C1A24 !important; }
     html.dark [class*="bg-[#F5F2FA]"] { background-color: #26222E !important; }
     html.dark [class*="bg-[#EEF1FF]"] { background-color: #20263A !important; }
@@ -51,7 +62,7 @@ const ThemeStyles = () => (
     html.dark [class*="to-[#FBDEDB]"] { --tw-gradient-to: #2E1815 var(--tw-gradient-to-position) !important; }
     html.dark [class*="text-[#1B1B21]"] { color: #F0F0F5 !important; }
     html.dark [class*="text-[#46464F]"] { color: #C7C7D1 !important; }
-    html.dark [class*="text-[#79747E]"] { color: #9C97A3 !important; }
+    html.dark [class*="text-[#645F6C]"] { color: #9C97A3 !important; }
     html.dark [class*="text-[#B3261E]"] { color: #FF7A6E !important; }
     html.dark [class*="text-[#1E8E3E]"] { color: #4ADE80 !important; }
     html.dark [class*="text-[#5C1A14]"] { color: #FFD4CC !important; }

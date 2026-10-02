@@ -2,6 +2,7 @@ import { useContext } from 'react';
 import { CheckCircle2, Edit2, Plus, Trash2 } from 'lucide-react';
 import SectionCard from './SectionCard';
 import CategorySelect from './CategorySelect';
+import { useCurrency } from './CurrencyContext';
 import { PrivacyContext, Amount } from './PrivacyContext';
 
 const AmountListSection = ({
@@ -9,6 +10,7 @@ const AmountListSection = ({
   updateItem, onAdd, onRemove, total, addLabel, emptyText, delay, categories, onAddCategory,
 }) => {
   const hide = useContext(PrivacyContext);
+  const { symbol } = useCurrency();
   return (
   <SectionCard
     title={title}
@@ -17,13 +19,13 @@ const AmountListSection = ({
     actions={
       <span className="rounded-full bg-[#EFECF4] px-3 py-1 text-sm font-semibold text-[#3255E4]">
         <Amount value={total} />
-        <span className="ml-1 font-normal text-[#79747E]">/mo</span>
+        <span className="ml-1 font-normal text-[#645F6C]">/mo</span>
       </span>
     }
   >
     <div className="space-y-2">
       {items.length === 0 && (
-        <p className="rounded-2xl bg-[#F5F2FA] px-4 py-6 text-center text-sm text-[#79747E]">{emptyText}</p>
+        <p className="rounded-2xl bg-[#F5F2FA] px-4 py-6 text-center text-sm text-[#645F6C]">{emptyText}</p>
       )}
       {items.map((item) => {
         const isEditing = editingExpense.type === 'current' && editingExpense.id === item.id;
@@ -51,7 +53,7 @@ const AmountListSection = ({
                   onAddCategory={onAddCategory}
                 />
                 <div className="flex items-center rounded-xl border border-[#C6C6D0] bg-white px-2 py-2">
-                  <span className="mr-1 text-xs text-[#79747E]">€</span>
+                  <span className="mr-1 text-xs text-[#645F6C]">{symbol}</span>
                   <input
                     type="number"
                     value={item.amount}
@@ -79,14 +81,14 @@ const AmountListSection = ({
                 <span className="text-sm font-semibold text-[#1B1B21]"><Amount value={item.amount} /></span>
                 <button
                   onClick={() => setEditingExpense({ type: 'current', id: item.id })}
-                  className="rounded-full p-2 text-[#79747E] transition-colors hover:bg-[#E3E8FF] hover:text-[#3255E4]"
+                  className="rounded-full p-2 text-[#645F6C] transition-colors hover:bg-[#E3E8FF] hover:text-[#3255E4]"
                   title="Edit"
                 >
                   <Edit2 size={15} />
                 </button>
                 <button
                   onClick={() => onRemove(items, setItems, item.id, item.name)}
-                  className="rounded-full p-2 text-[#79747E] transition-colors hover:bg-[#FDEDEA] hover:text-[#B3261E]"
+                  className="rounded-full p-2 text-[#645F6C] transition-colors hover:bg-[#FDEDEA] hover:text-[#B3261E]"
                   title="Delete"
                 >
                   <Trash2 size={15} />

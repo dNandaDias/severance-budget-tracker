@@ -1,21 +1,19 @@
 import { Sun, Moon, ArrowLeftRight } from 'lucide-react';
 
-const AppHeader = ({ icon: Icon, iconBg, title, subtitle, darkMode, setDarkMode, showSavedPing, onSwitchMode }) => (
-  <div className="bg-[#2A1B3D] text-white">
+const AppHeader = ({ icon: Icon, title, subtitle, darkMode, setDarkMode, showSavedPing, onSwitchMode }) => (
+  <div className="bg-[color:var(--app-bar)] text-white">
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ background: iconBg }}>
-            <Icon size={22} />
-          </span>
+        <div className="flex items-start gap-4">
+          <Icon size={38} strokeWidth={1.5} className="mt-1 shrink-0" aria-hidden="true" />
           <div>
-            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
-            <p className="text-sm text-white/60">{subtitle}</p>
+            <h1 className="text-[1.8rem] font-semibold leading-tight tracking-tight sm:text-[2.2rem]">{title}</h1>
+            <p className="text-sm text-white/75">{subtitle}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div
-            className={`flex items-center gap-1.5 text-sm text-white/50 transition-opacity duration-500 ${
+            className={`flex items-center gap-1.5 text-sm text-white/70 transition-opacity duration-500 ${
               showSavedPing ? 'opacity-100' : 'opacity-0'
             }`}
           >

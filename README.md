@@ -44,6 +44,10 @@ multi-file app in sync by hand stopped being worth it.)
 - **"Start a new period"**: download a full backup, then clear a mode's data for a
   fresh start (e.g. severance ending, a new job starting). Confirms first, and the
   clear itself is undoable for a few seconds. The other mode is never affected.
+- **Currency selector** in the top bar of the first page (euro by default), shown as a compact
+  pill such as `€ EUR`. It is a set-once choice that applies to both modes. It changes the
+  symbol and number format everywhere, including the icons and the exports, but never
+  converts your amounts.
 - **Dark mode** and a **privacy-blur toggle** (for screen-sharing or screenshots),
   both real Material 3 treatments, not a quick inversion.
 
@@ -71,9 +75,9 @@ severance-budget-tracker/
     │   ├── CategorySelect.jsx, AmountListSection.jsx, UnusualExpensesSection.jsx,
     │   │   DistributedExpensesSection.jsx
     │   ├── ExportDataSection.jsx, ConfirmDialog.jsx, Snackbar.jsx
-    │   ├── PrivacyContext.jsx, icons.jsx
+    │   ├── PrivacyContext.jsx, CurrencyContext.jsx
     ├── hooks/                       # useInView, useCountUp
-    └── lib/                         # format.js, categories.js, chartTheme.js
+    └── lib/                         # format.js, categories.js, chartTheme.js, currencies.js
 ```
 
 Both trackers are separate top-level components (not one component with
@@ -95,7 +99,7 @@ A few things are **shared** across both modes, since they're viewing preferences
 or a personal taxonomy, not data tied to one period:
 
 - `budgetTracker_categories`: your preset + custom category list
-- `budgetTracker_darkMode`, `budgetTracker_hideAmounts`: appearance preferences
+- `budgetTracker_darkMode`, `budgetTracker_hideAmounts`, `budgetTracker_currency`: viewing preferences
 - `budgetTracker_activeMode`: which mode the picker last sent you to
 
 ## Design notes
