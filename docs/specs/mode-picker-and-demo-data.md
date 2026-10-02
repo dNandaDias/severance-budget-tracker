@@ -403,6 +403,15 @@ on top of the separate-storage safety net.
   a JSON restore; a "convert at this rate" step inside "Start a new period" with an automatic
   backup first; per-entry currency (a larger data-model change).
 
+- **Step 17 (post-plan): custom currency menu, 2026-10-03.** Nanda sent screenshots of the
+  currency list opening far from its button and too large. It was the browser's native
+  `<select>` popup, which the page cannot position or size (on her Mac it opened at the far edge
+  of the window with oversized text). Replaced by `CurrencyMenu.jsx`: a pill button that opens a
+  compact panel (224px wide, rows with symbol, code and name) directly below it, right-aligned on
+  desktop and left-aligned on phones, with `listbox` semantics: arrows, Home, End, Enter, Space,
+  Escape (focus returns to the pill), Tab and click-outside close it. It still hands off to the
+  "Change currency?" dialog when data exists. Checked at 1440 and 390 wide, light and dark.
+
 ## Confirmed sequencing
 
 1. ~~**Finish dark mode**~~ — done, see progress log.

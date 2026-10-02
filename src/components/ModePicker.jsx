@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Wallet2, PiggyBank, ArrowRight, ChevronDown } from 'lucide-react';
+import { Wallet2, PiggyBank, ArrowRight } from 'lucide-react';
 import ThemeStyles from './ThemeStyles';
 import ConfirmDialog from './ConfirmDialog';
+import CurrencyMenu from './CurrencyMenu';
 import { hasSavedData } from '../lib/savedData';
 import { useCurrency } from './CurrencyContext';
-import { CURRENCIES, currencyLabel } from '../lib/currencies';
 
 const MODES = [
   {
@@ -47,22 +47,9 @@ const ModePicker = ({ onSelect }) => {
           <h1 className="text-[2.1rem] font-semibold leading-tight tracking-tight sm:text-[2.7rem]">Budget Tracker</h1>
           <p className="mt-1 text-sm text-white/75">Choose how you want to track your money</p>
         </div>
-        <label className="relative mt-1.5">
-          <span className="sr-only">Currency</span>
-          <select
-            value={currency}
-            onChange={(e) => requestCurrency(e.target.value)}
-            title="Currency"
-            className="h-9 cursor-pointer appearance-none rounded-full bg-white/10 pl-3.5 pr-8 text-sm font-medium text-white transition-colors hover:bg-white/20"
-          >
-            {CURRENCIES.map((c) => (
-              <option key={c.code} value={c.code} style={{ color: '#1B1B21', background: '#FFFFFF' }}>
-                {currencyLabel(c.code)}
-              </option>
-            ))}
-          </select>
-          <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
-        </label>
+        <div className="mt-1.5">
+          <CurrencyMenu value={currency} onChange={requestCurrency} />
+        </div>
       </div>
     </div>
 
