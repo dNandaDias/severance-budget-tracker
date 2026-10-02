@@ -6,7 +6,7 @@ const SectionCard = ({ title, icon: Icon, children, actions, delay = 0, classNam
     <div
       ref={ref}
       style={{ transitionDelay: `${delay}ms` }}
-      className={`glass-card rounded-[28px] p-6 shadow-sm transition-all duration-700 ease-[cubic-bezier(0,0,0,1)] hover:shadow-md sm:p-7 ${
+      className={`glass-card rounded-[28px] p-6 shadow-sm transition-all duration-[400ms] ease-[cubic-bezier(0,0,0,1)] hover:shadow-md sm:p-7 ${
         inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
       } ${className}`}
     >
